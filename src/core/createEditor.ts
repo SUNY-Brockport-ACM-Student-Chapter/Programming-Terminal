@@ -1,0 +1,12 @@
+import {EditorState, Compartment} from "@codemirror/state"
+import {EditorView, keymap, basicSetup} from "codemirror"
+import {indentWithTab} from "@codemirror/commands"
+import {StreamLanguage} from "@codemirror/language"
+import {oneDark} from "@codemirror/theme-one-dark"
+
+import {python} from "@codemirror/lang-python"
+import {java} from "@codemirror/lang-java"
+import {cpp} from "@codemirror/lang-cpp"
+import {shell} from "@codemirror/legacy-modes/mode/shell"
+import {commonLisp} from "@codemirror/legacy-modes/mode/commonlisp"
+import {prolog} from "@codemirror/legacy-modes/mode/prolog"
