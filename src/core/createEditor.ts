@@ -26,7 +26,7 @@ export const languageExtensions: Record<SupportedLanguage, any> = {
     prolog: StreamLanguage.define(prolog)
 }
 
-export const initialCode: Record<SupportedLanguage, string> = {
+export const startingCode: Record<SupportedLanguage, string> = {
     python: '# Python\ndef greet(name: str) -> str:\n    return f"Hello, {name}!"\n\nprint(greet("World"))\n',
     java:   '// Java\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n',
     c:      '// C\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}\n',
@@ -57,7 +57,7 @@ export function createEditor(
   const languageCompartment = new Compartment() // Compartment allows dynamic reconfiguration of language support
 
   const state = EditorState.create({
-    doc: config.doc ?? initialCode[lang],
+    doc: config.doc ?? startingCode[lang],
     extensions: [
       basicSetup, // Basic editor features like line numbers, syntax highlighting, etc.
       keymap.of([indentWithTab]), // Enable tab indentation
@@ -87,7 +87,7 @@ export function createEditor(
     setLanguage:(lang: SupportedLanguage) => 
     {
         view.dispatch({
-            changes: {from: 0, to : view.state.doc.length, insert: initialCode[lang]},
+            changes: {from: 0, to : view.state.doc.length, insert: startingCode[lang]},
             effects: languageCompartment.reconfigure(languageExtensions[lang])
         })
     },
