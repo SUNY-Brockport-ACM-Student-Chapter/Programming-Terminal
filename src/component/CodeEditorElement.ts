@@ -203,12 +203,134 @@ private initTerminal(){
 
 private bindToolbar(){
     const shadow = this.shadowRoot!
-    
+
+    shadow.querySelector('#run-btn')?.addEventListener('click', () => {
+      //Clear previous context when a new run starts so the AI feedback only reads the most recent execution
+      this.lastOutput = ''
+      this.sessionTranscript = []
+      this.showOutput('', '', true)
+      this.emit('editor-run', {code: this.editor.getValue(), language: this.language})
+    })
+
+    shadow.querySelector('#ai-btn')?.addEventListener('click', () => {
+      // Include terminal context alongside the source code so the AI can see runtime behavior, not just static code
+      this.emit('editor-ai', {
+        code: this.editor.getValue(),
+        language: this.language,
+        terminalOutput: this.lastOutput,
+        sessionTranscript: this.sessionTranscript.join('\n'),
+      })
+    })
+
+    shadow.querySelector<HTMLSelectElement>('#lang-select')?.addEventListener('change', (e) => {
+      this.language = (e.target as HTMLSelectElement).value as SupportedLanguage
+      this.editor.setLanguage(this.language)
+    })  
 }
 
+// Public API
+
+getValue(): string {
+    return this.editor.getValue()
+}
+
+setValue(val: string) {
+    this.editor.setValue(val)
+}
+
+setLanguage(lang: SupportedLanguage) {
+  this.language = lang
+  this.editor.setLanguage(lang)
+  const select = this.shadowRoot!.querySelector<HTMLSelectElement>('#language-select')
+  if(select) select.value = lang
+}
+
+// Display output in the terminal area. Stores output in lastOutput for AI to read when the student clicks AI Feedback after running their code.
+showOutput(stdout:string, stderr: string, loading = false){
+  this.terminal.clear()
+
+  if(loading)
+  {
+    this.terminal.writeln('\x1b[33mRunning...\x1b[0m')
+    return
+  }
+
+  // Combine stdout and stderr into a readable string
+  if(stdout || stderr)
+  {
+    this.lastOutput = [
+      stdout ? `STDOUT:\n${stdout}` : '',
+      stderr ? `STDERR:\n${stderr}` : ''
+    ].filter(Boolean).join('\n\n')
+
+    if(stdout){
+      this.terminal.write(stdout)
+      if(!stdout.endsWith('\n')) this.terminal.writeln('')
+    }
+
+    if(stderr){
+      stderr.split('\n').forEach(line => {
+        if (line) this.terminal.writeln(`\x1b[31m${line}\x1b[0m`) // Red color for stderr
+      })
+    }
+
+    if(!stdout && !stderr){
+      this.terminal.writeln('\x1b[90mNo output.\x1b[0m')
+    }
+  }
+}
+
+/*
+Switch the terminal to interactive REPL mode and capture the full session transcript for AI context.
+The WebSocket carries two directions of data:
+1. Messages from the the server (container stdout/stderr) arrive as ws.onmessage
+2. Keystrokes from the user fire terminal.onData before going to the server
+
+Both are logged into sessionTranscript so the AI feedback can read the full REPL session history, not just the final output.
+*/
+attachInteractiveSession(ws: WebSocket){
+    this.terminal.options.disableStdin = false
+    this.terminal.options.cursorBlink = true
+    this.terminal.loadAddon(new AttachAddon(ws))
+
+    ws.addEventListener('message', (event) => {
+      const text = typeof event.data === 'string' 
+        ? event.data 
+        : new TextDecoder().decode(event.data as ArrayBuffer)
+      if(text.trim()){
+        this.sessionTranscript.push(`[OUTPUT] ${text.replace(/\r?\n/g, '')}`)
+      }
+    })
+
+    //Capture user input (what they type at the prompt). terminal.onData fires before the keystroke is sent to the WebSocket
+    this.terminal.onData((data) => {
+      // Only log printable characters and Enter key. Skip control characters like arrow keys, Ctrl+C, etc. to keep the transcript focused on user intent rather than terminal control sequences.
+      if(data === '\r'){
+        this.sessionTranscript.push('[ENTER]')
+      }else if (data.charCodeAt(0) >= 32){
+        // Accumulate printable chars into last INPUT entry if it exists
+        const lastEntry =  this.sessionTranscript[this.sessionTranscript.length - 1]
+        if(lastEntry?.startsWith('[INPUT]')){
+          this.sessionTranscript[this.sessionTranscript.length - 1] = lastEntry + data
+        }else{
+          this.sessionTranscript.push(`[INPUT] ${data}`)
+        }
+      }
+    })
+  }
+
+  showFeedback(text: string){
+    this.terminal.writeln('')
+    this.terminal.writeln('\x1b[36m=== AI Feedback ===\x1b[0m')
+    text.split('\n').forEach(line => {
+      this.terminal.writeln(`\x1b[36m${line}\x1b[0m`)
+    })
+  }
 
 // Event helper to emit typed custom events
 private emit<K extends keyof CodeEditorEvents>(type: K, detail: CodeEditorEvents[K]){
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }))
     }
 }
+
+customElements.define('code-editor', CodeEditorElement)
