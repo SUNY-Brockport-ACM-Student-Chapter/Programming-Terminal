@@ -10,11 +10,11 @@ import {java} from "@codemirror/lang-java"
 import {cpp} from "@codemirror/lang-cpp"
 import {shell} from "@codemirror/legacy-modes/mode/shell"
 import {commonLisp} from "@codemirror/legacy-modes/mode/commonlisp"
-import {prolog} from "@codemirror/legacy-modes/mode/prolog"
+//import {prolog} from "@codemirror/legacy-modes/mode/prolog"
 
-// Language support mapping
+// Language support mapping NOTE: Prolog was removed due to errors. Will re-add later
 export const SUPPORTED_LANGUAGES =['python', 'java', 'c', 
-    'shell', 'lisp', 'prolog'] as const
+    'shell', 'lisp', ] as const
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
 
 export const languageExtensions: Record<SupportedLanguage, any> = {
@@ -23,7 +23,7 @@ export const languageExtensions: Record<SupportedLanguage, any> = {
     c: cpp(),
     shell: StreamLanguage.define(shell),
     lisp: StreamLanguage.define(commonLisp),
-    prolog: StreamLanguage.define(prolog)
+    //prolog: StreamLanguage.define(prolog)
 }
 
 export const startingCode: Record<SupportedLanguage, string> = {
@@ -32,7 +32,7 @@ export const startingCode: Record<SupportedLanguage, string> = {
     c:      '// C\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}\n',
     shell:  '#!/bin/bash\necho "Hello, World!"\nls -la\n',
     lisp:   '; Common Lisp\n(defun greet (name)\n  (format t "Hello, ~a!~%" name))\n\n(greet "World")\n',
-    prolog: "% Prolog\n:- initialization(main).\n\nmain :-\n    write('Hello, World!'), nl.\n",
+    //prolog: "% Prolog\n:- initialization(main).\n\nmain :-\n    write('Hello, World!'), nl.\n",
 }
 
 // Editor Instance - the public API returned by createEditor

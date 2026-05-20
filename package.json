@@ -1,12 +1,20 @@
 {
   "name": "programming-terminal",
-  "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "main": "dist/code-editor.umd.js",
+  "module": "dist/code-editor.js",
+  "types": "dist/CodeEditorElement.d.ts",
+  "exports":{
+    ".": {
+      "import": "./dist/code-editor.js",
+      "require": "./dist/code-editor.umd.js"
+    }
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "vite build",
+    "build:lib": "vite build --mode lib"
   },
   "devDependencies": {
     "typescript": "~6.0.2",
