@@ -1,3 +1,7 @@
+/*
+This file defines a custom web component that wraps createEditor in a Shadow DOM.
+It adds a toolbar with language selection, Run button, and AI Feedback button, and integrates an xterm.js terminal for output display.
+*/
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
 import { AttachAddon } from "@xterm/addon-attach"
@@ -27,7 +31,7 @@ export type CodeEditorEvents = {
 export class CodeEditorElement extends HTMLElement {
     private editor!: EditorInstance
     private terminal!: Terminal
-    private fitAddon!: FitAddon
+    private fitAddon!: FitAddon // For resizing the terminal to fit its container
     private language: SupportedLanguage = 'java' // default language
     private lastOutput: string = '' // store last terminal output for AI context
     private sessionTranscript: string[] = [] // store REPL session transcript for AI context
@@ -38,7 +42,7 @@ export class CodeEditorElement extends HTMLElement {
 
     constructor(){
         super()
-        this.attachShadow({mode: 'open'})
+        this.attachShadow({mode: 'open'}) // Use Shadow DOM to encapsulate styles and structure
     }
 
     connectedCallback(){
@@ -55,7 +59,7 @@ export class CodeEditorElement extends HTMLElement {
         this.terminal?.dispose()
     }
 
-    attributeChangedCallback(name:string, oldValue: string | null, newValue: string | null){
+    attributeChangedCallback(name:string, _oldValue: string | null, newValue: string | null){ // note: the underscore in _oldValue indicates it's intentionally unused.
         if(!this.editor) return
 
         if(name === 'language' && newValue && SUPPORTED_LANGUAGES.includes(newValue as SupportedLanguage)){
@@ -168,9 +172,10 @@ private initEditor(initialCode: string){
     })
 }
 
-// Initialize the xterm.js terminal
-// xterm.js renders ANSI color codes, so GCC/javac/Python error messages display with proper colors
-// For interactive languages (Prolog, Lisp, etc.) call attachInteractiveSession() to wire in a WebSocket REPL
+/*  Initialize the xterm.js terminal
+    xterm.js renders ANSI color codes, so GCC/javac/Python error messages display with proper colors
+    For interactive languages (Prolog, Lisp, etc.) call attachInteractiveSession() to wire in a WebSocket REPL
+*/
 private initTerminal(){
     const terminalArea = this.shadowRoot!.querySelector<HTMLDivElement>('#terminal-area')!
 
@@ -245,7 +250,7 @@ setLanguage(lang: SupportedLanguage) {
   if(select) select.value = lang
 }
 
-// Display output in the terminal area. Stores output in lastOutput for AI to read when the student clicks AI Feedback after running their code.
+// Display output in the terminal area. Stores output in lastOutput for AI to read when the user clicks AI Feedback after running their code.
 showOutput(stdout:string, stderr: string, loading = false){
   this.terminal.clear()
 
