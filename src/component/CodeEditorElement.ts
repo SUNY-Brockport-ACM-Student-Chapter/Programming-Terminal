@@ -5,7 +5,7 @@ It adds a toolbar with language selection, Run button, and AI Feedback button, a
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
 import { AttachAddon } from "@xterm/addon-attach"
-import '@xterm/xterm/css/xterm.css'
+import xtermCss from '@xterm/xterm/css/xterm.css?inline'
 
 import {
     createEditor,
@@ -76,7 +76,13 @@ export class CodeEditorElement extends HTMLElement {
 
     private buildDOM(){
         const shadow = this.shadowRoot!
-    shadow.innerHTML = `
+
+        //  Inject xterm.css styles directly into the Shadow DOM to style the terminal
+        const xtermStyle = document.createElement('style')
+        xtermStyle.textContent = xtermCss
+        shadow.appendChild(xtermStyle)
+
+    shadow.innerHTML += `
       <style>
         :host {
           display: flex;
@@ -99,26 +105,27 @@ export class CodeEditorElement extends HTMLElement {
           background: #3c3c3c;
           color: #d4d4d4;
           border: 1px solid #555;
-          padding: 3px 6px;
+          padding: 3px 16px;
           border-radius: 4px;
-          font-size: 13px;
+          font-size: 14px;
           cursor: pointer;
         }
         button {
-          background: #0e639c;
+          background: #005c17;
           color: white;
           border: none;
           padding: 4px 12px;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 13px;
+          font-size: 14px;
         }
-        button:hover    { background: #1177bb; }
+        button:hover    { background: #008020; }
         button:disabled { background: #555; cursor: not-allowed; }
         .editor-area {
           flex: 1;
+          font-size: 14px;
           overflow: auto;
-          min-height: 0;
+          min-height: 0; /* Allow the editor to shrink properly in flex layout */
         }
         .terminal-label {
           font-size: 11px;
@@ -138,7 +145,7 @@ export class CodeEditorElement extends HTMLElement {
           padding: 4px;
         }
         .cm-editor  { height: 100%; }
-        .cm-scroller { overflow: auto; }
+        .cm-scroller { min-height: 300px; max-height: 300px;}
       </style>
 
       <div class="toolbar">
@@ -148,7 +155,7 @@ export class CodeEditorElement extends HTMLElement {
           <option value="c">C</option>
           <option value="shell">Unix / Shell</option>
           <option value="lisp">Common Lisp</option>
-          <option value="prolog">Prolog</option>
+          <!-- <option value="prolog">Prolog</option> -->
         </select>
         <button id="run-btn">&#9654; Run</button>
         <button id="ai-btn">&#10022; AI Feedback</button>
@@ -183,16 +190,19 @@ private initTerminal(){
       theme: {
         background: '#0d0d0d',
         foreground: '#d4d4d4',
-        cursor:     '#d4d4d4',
+        cursor:     'transparent', // Hide the cursor until we enter interactive mode
+        cursorAccent: 'transparent',
         red:        '#cd3131',
         green:      '#0dbc79',
         yellow:     '#e5e510',
         blue:       '#2472c8',
         cyan:       '#11a8cd',
       },
-      fontSize:     13,
+      fontSize:     14,
       fontFamily:   'Menlo, Monaco, "Courier New", monospace',
       cursorBlink:  false,
+      cursorStyle: 'bar',
+      cursorInactiveStyle: 'none',
       disableStdin: true,   // batch mode by default
       convertEol:   true,   // \n → \r\n for correct line endings
     })
@@ -203,7 +213,7 @@ private initTerminal(){
     this.fitAddon.fit()
 
     new ResizeObserver(() => this.fitAddon.fit()).observe(terminalArea)
-    this.terminal.writeln('\x1b[90mReady. Click Run to execute code.\x1b[0m')
+    this.terminal.writeln('\x1b[37mReady. Click Run to execute code.\x1b[0m')
 }
 
 private bindToolbar(){
@@ -280,7 +290,7 @@ showOutput(stdout:string, stderr: string, loading = false){
     }
 
     if(!stdout && !stderr){
-      this.terminal.writeln('\x1b[90mNo output.\x1b[0m')
+      this.terminal.writeln('\x1b[37mNo output.\x1b[0m')
     }
   }
 }

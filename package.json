@@ -5,7 +5,7 @@
   "main": "dist/code-editor.umd.js",
   "module": "dist/code-editor.js",
   "types": "dist/CodeEditorElement.d.ts",
-  "exports":{
+  "exports": {
     ".": {
       "import": "./dist/code-editor.js",
       "require": "./dist/code-editor.umd.js"
