@@ -97,8 +97,8 @@ export class CodeEditorElement extends HTMLElement {
           align-items: center;
           gap: 8px;
           padding: 6px 10px;
-          background: #2d2d2d;
-          border-bottom: 1px solid #444;
+          background: #252525;
+          border-bottom: 1px solid #343434;
           flex-shrink: 0;
         }
         select {
@@ -145,7 +145,7 @@ export class CodeEditorElement extends HTMLElement {
           padding: 4px;
         }
         .cm-editor  { height: 100%; }
-        .cm-scroller { min-height: 300px; max-height: 300px;}
+        .cm-scroller { min-height: 300px; max-height: 300px;} /* Sets a fixed height for the editor area. */
       </style>
 
       <div class="toolbar">
@@ -260,7 +260,8 @@ setLanguage(lang: SupportedLanguage) {
   if(select) select.value = lang
 }
 
-// Display output in the terminal area. Stores output in lastOutput for AI to read when the user clicks AI Feedback after running their code.
+// Display output in the terminal area. 
+// Stores output in lastOutput for AI to read when the user clicks AI Feedback after running their code.
 showOutput(stdout:string, stderr: string, loading = false){
   this.terminal.clear()
 
