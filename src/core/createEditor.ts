@@ -3,9 +3,11 @@ import {EditorView, basicSetup} from "codemirror"
 import { keymap } from "@codemirror/view"
 import {indentWithTab} from "@codemirror/commands"
 import {StreamLanguage} from "@codemirror/language"
+import {syntaxTree} from "@codemirror/language"
+import {linter, lintGutter, type Diagnostic} from "@codemirror/lint"
 import {oneDark} from "@codemirror/theme-one-dark"
 
-import {python} from "@codemirror/lang-python"
+import {pythonLanguage} from "@codemirror/lang-python" // Python is imported without auto-completion
 import {java} from "@codemirror/lang-java"
 import {cpp} from "@codemirror/lang-cpp"
 import {shell} from "@codemirror/legacy-modes/mode/shell"
@@ -18,7 +20,7 @@ export const SUPPORTED_LANGUAGES =['python', 'java', 'c',
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
 
 export const languageExtensions: Record<SupportedLanguage, any> = {
-    python: python(),
+    python: pythonLanguage,
     java: java(),
     c: cpp(),
     shell: StreamLanguage.define(shell),
@@ -63,6 +65,8 @@ export function createEditor(
       keymap.of([indentWithTab]), // Enable tab indentation
       languageCompartment.of(languageExtensions[lang]), // Set initial language support
       oneDark, // One Dark theme for better aesthetics
+      codeLinter, // Custom linter for syntax error feedback
+      lintGutter(), // Show linting errors in the gutter
       EditorView.lineWrapping, // Enable line wrapping for better readability
       EditorView.updateListener.of((update) => { 
         if (update.docChanged) {
@@ -94,4 +98,24 @@ export function createEditor(
 
     destroy: () => view.destroy(),
   }
+
 }
+
+// The linter provides syntax error feedback by scanning the syntax tree for nodes named "⚠" and marking them as errors.
+  const codeLinter = linter((view) => {
+    const diagnostics: Diagnostic[] = []
+
+    syntaxTree(view.state).cursor().iterate(node => {
+      // In CodeMirror's syntax tree, nodes with the name "⚠" indicate syntax errors.
+      if (node.name === "⚠"){
+        diagnostics.push({
+          from: node.from, // Start position of where the error is located
+          to: node.to, // End position of the error
+          severity: "error",
+          message: "Syntax error"
+        })
+      }
+    })
+
+    return diagnostics
+})
