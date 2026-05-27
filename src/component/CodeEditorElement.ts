@@ -150,10 +150,18 @@ export class CodeEditorElement extends HTMLElement {
 
       <div class="toolbar">
         <select id="lang-select">
-          <option value="python">Python</option>
-          <option value="java">Java</option>
           <option value="c">C</option>
+          <option value="cobol">COBOL</option>
+          <option value="cpp">C++</option>
+          <option value="go">Go</option>
+          <option value="java">Java</option>
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="r">R</option>
+          <option value="rust">Rust</option>
           <option value="shell">Unix / Shell</option>
+          <option value="sql">SQL</option>
+          <option value="typescript">TypeScript</option>
           <option value="lisp">Common Lisp</option>
           <!-- <option value="prolog">Prolog</option> -->
         </select>
