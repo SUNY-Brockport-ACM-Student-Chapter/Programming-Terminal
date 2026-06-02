@@ -52,6 +52,7 @@ export class CodeEditorElement extends HTMLElement {
             this.initEditor(initalCode)
             this.initTerminal()
             this.bindToolbar()
+            this.bindDragAndDrop()
     }
 
     disconnectedCallback(){
@@ -92,6 +93,17 @@ export class CodeEditorElement extends HTMLElement {
           color: #d4d4d4;
           font-family: sans-serif;
         }
+        // This container holds the editor and terminal
+        .workspace-body{ 
+          display:flex;
+          flex-direction: column; // Stack toolbar, editor, and terminal vertically as default
+          flex: 1;
+          min-height: 0;
+          position: relative;
+        }
+        .workspace-body.horizontal {
+          flex-direction: row; // Place editor and terminal side by side
+        }
         .toolbar {
           display: flex;
           align-items: center;
@@ -126,21 +138,34 @@ export class CodeEditorElement extends HTMLElement {
           font-size: 14px;
           overflow: auto;
           min-height: 0; /* Allow the editor to shrink properly in flex layout */
+          min-width: 0; /* Prevent horizontal overflow in flex layout */
+        }
+        // Keeps the terminal label and area together
+        .terminal-container{
+          display: flex;
+          flex-direction: column;
+          background: #0d0d0d;
+          flex-shrink: 0;
+          height: 200px;
+          width: 100%;
+        }
+        .workspace-body.horizontal .terminal-container{
+          height: 100%;
+          width: 400px;
         }
         .terminal-label {
           font-size: 11px;
           color: #888;
-          padding: 2px 8px;
+          padding: 6px 8px;
           background: #1a1a1a;
           border-top: 1px solid #333;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           flex-shrink: 0;
+          cursor: grab;
         }
         .terminal-area {
-          height: 200px;
-          background: #0d0d0d;
-          flex-shrink: 0;
+          flex: 1; 
           overflow: hidden;
           padding: 4px;
         }
@@ -169,9 +194,14 @@ export class CodeEditorElement extends HTMLElement {
         <button id="ai-btn">&#10022; AI Feedback</button>
       </div>
 
-      <div class="editor-area" id="editor-area"></div>
-      <div class="terminal-label">Output</div>
-      <div class="terminal-area" id="terminal-area"></div>
+      <div class="workspace-body" id="workspace-body">
+        <div class="editor-area" id="editor-area"></div>
+
+        <div class="terminal-container" id="terminal-container">
+          <div class="terminal-label" id="terminal-drag-handle" draggable="true">Output</div>
+          <div class="terminal-area" id="terminal-area"></div>
+        </div>
+      </div>
     `
 
     shadow.querySelector<HTMLSelectElement>('#lang-select')!.value = this.language
@@ -249,6 +279,60 @@ private bindToolbar(){
       this.language = (e.target as HTMLSelectElement).value as SupportedLanguage
       this.editor.setLanguage(this.language)
     })  
+}
+
+private bindDragAndDrop(){
+  const shadow = this.shadowRoot!;
+  const workspaceBody = shadow.querySelector<HTMLDivElement>('#workspace-body')!;
+  const dragHandle = shadow.querySelector<HTMLDivElement>('#terminal-drag-handle')!;
+  const editorArea = shadow.querySelector<HTMLDivElement>('#editor-area')!;
+
+  dragHandle.addEventListener('dragstart', (e) => {
+    if(e.dataTransfer){
+      e.dataTransfer.setData('application/x-terminal-panel', 'true');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    dragHandle.style.cursor = 'grabbing';
+  });
+
+  dragHandle.addEventListener('dragend', () => {
+    dragHandle.style.cursor = 'grab';
+  });
+
+  workspaceBody.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if(e.dataTransfer){
+      e.dataTransfer.dropEffect = 'move';
+    }
+  });
+
+  workspaceBody.addEventListener('drop', (e) => {
+    if(!e.dataTransfer?.getData('application/x-terminal-panel')){
+      return; // Not a terminal panel drag, ignore
+    }
+
+    e.preventDefault();
+    e.stopPropagation(); // Stop CodeMirror from interpreting the drop as a file upload
+
+    // Determine drop position relative to the editor area
+    const rect = editorArea.getBoundingClientRect();
+    const dropX = e.clientX - rect.left;
+
+    // If dropped on the right 40% of the editor area, move the terminal to the right side.
+    if(dropX > rect.width * 0.6){
+      workspaceBody.classList.add('horizontal');
+    } else {
+      // Otherwise, keep the terminal below the editor.
+      workspaceBody.classList.remove('horizontal');
+    }
+
+    // Trigger xterm's fit addon to resize the terminal after moving
+    if(this.fitAddon){
+      setTimeout(() => {
+        this.fitAddon.fit();
+      }, 50); // Slight delay to allow CSS changes to take effect before resizing
+    }
+  });
 }
 
 // Public API
@@ -343,6 +427,7 @@ attachInteractiveSession(ws: WebSocket){
     })
   }
 
+  // AI Feedback is displayed in the terminal for now. Will likely be in the platform's own container
   showFeedback(text: string){
     this.terminal.writeln('')
     this.terminal.writeln('\x1b[36m=== AI Feedback ===\x1b[0m')

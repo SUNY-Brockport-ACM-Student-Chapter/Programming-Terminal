@@ -108,14 +108,15 @@ export function createEditor(
 
   return{
     view,
+    // getValue retrieves the current content of the editor by converting the document state to a string.
     getValue: () => view.state.doc.toString(),
     
     setValue: (val: string) => 
         view.dispatch({changes: {from:0, to: view.state.doc.length, 
             insert: val }}), 
         
-        // Compartment.reconfigure() swaps the language without rebuilding the editor
-        // Undo history, cursor position, and scroll state are preserved.
+    // Compartment.reconfigure() swaps the language without rebuilding the editor
+    // Undo history, cursor position, and scroll state are preserved.
     setLanguage:(lang: SupportedLanguage) => 
     {
         view.dispatch({
