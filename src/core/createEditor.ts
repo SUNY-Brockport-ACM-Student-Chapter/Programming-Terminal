@@ -108,14 +108,15 @@ export function createEditor(
 
   return{
     view,
+    // getValue retrieves the current content of the editor by converting the document state to a string.
     getValue: () => view.state.doc.toString(),
     
     setValue: (val: string) => 
         view.dispatch({changes: {from:0, to: view.state.doc.length, 
             insert: val }}), 
         
-        // Compartment.reconfigure() swaps the language without rebuilding the editor
-        // Undo history, cursor position, and scroll state are preserved.
+    // Compartment.reconfigure() swaps the language without rebuilding the editor
+    // Undo history, cursor position, and scroll state are preserved.
     setLanguage:(lang: SupportedLanguage) => 
     {
         view.dispatch({
@@ -135,10 +136,26 @@ export function createEditor(
 
     syntaxTree(view.state).cursor().iterate(node => {
       // In CodeMirror's syntax tree, nodes with the name "⚠" indicate syntax errors.
-      if (node.name === "⚠"){
+      if (node.name === "⚠")
+      {
+        let pos = node.from
+
+        // Walk back from the error node past any whitespaces and newlines to find the most accurate position the error occurred 
+        while(pos > 0)
+        {
+          const char = view.state.doc.sliceString(pos - 1, pos)
+          if(char !== ' ' && char !== '\t' && char !== '\n' && char !== '\r')
+          {
+            break
+          }
+          pos--
+        }
+
+        // If we moved back, use that position. Otherwise, use the original node position.
+        const adjustedPos = pos > 0 ? pos : node.from
         diagnostics.push({
-          from: node.from, // Start position of where the error is located
-          to: node.to, // End position of the error
+          from: adjustedPos, // Start position of where the error is located
+          to: adjustedPos, // End position of the error
           severity: "error",
           message: "Syntax error"
         })
