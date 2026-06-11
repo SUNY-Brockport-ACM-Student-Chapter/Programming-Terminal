@@ -1,0 +1,13 @@
+{
+    "name": "programming-terminal",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix execution-server\"",
+        "build:frontend": "npm run build --prefix frontend",
+        "build:execution-server": "npm run build --prefix execution-server",
+        "install:all": "npm install --prefix frontend && npm install --prefix execution-server"
+    },
+    "devDependencies": {
+        "concurrently": "^10.0.3"
+    }
+}

@@ -10,53 +10,31 @@ import {oneDark} from "@codemirror/theme-one-dark"
 import {pythonLanguage} from "@codemirror/lang-python" // Python is imported without auto-completion
 import {java} from "@codemirror/lang-java"
 import {cpp} from "@codemirror/lang-cpp"
-import { sql } from "@codemirror/lang-sql"
-import { rust } from "@codemirror/lang-rust"
-import { go } from "@codemirror/lang-go"
-import {javascript} from "@codemirror/lang-javascript"
-import { cobol } from "@codemirror/legacy-modes/mode/cobol"
 import {shell} from "@codemirror/legacy-modes/mode/shell"
 import {commonLisp} from "@codemirror/legacy-modes/mode/commonlisp"
-import { r } from "codemirror-lang-r"
-//import {prolog} from "@codemirror/legacy-modes/mode/prolog"
+import {prolog} from "codemirror-lang-prolog"
 
 // Language support mapping NOTE: Prolog was removed due to errors. Will re-add later
-export const SUPPORTED_LANGUAGES =[ 'c', 'cobol','cpp', 'go', 'java', 'javascript', 'python', 'lisp',
-    'r', 'rust','shell', 'sql', 'typescript'] as const
+export const SUPPORTED_LANGUAGES =[ 'c','java', 'prolog','python', 'lisp',
+    'shell'] as const
 export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
 
 export const languageExtensions: Record<SupportedLanguage, any> = {
     c: cpp(),
-    cpp: cpp(),
-    go: go(),
     java: java(),
-    javascript: javascript(),
+    prolog: prolog(),
     python: pythonLanguage,
-    sql: sql(),
-    r: r(),
-    rust: rust(),
-    typescript: javascript({ typescript: true }),
-    cobol: StreamLanguage.define(cobol),
     shell: StreamLanguage.define(shell),
-    lisp: StreamLanguage.define(commonLisp),
-    //prolog: StreamLanguage.define(prolog)
+    lisp: StreamLanguage.define(commonLisp)
 }
 
 export const startingCode: Record<SupportedLanguage, string> = {
     python: '# Python\ndef greet(name: str) -> str:\n    return f"Hello, {name}!"\n\nprint(greet("World"))\n',
     java:   '// Java\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n',
     c:      '// C\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}\n',
-    cpp:    '// C++\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}\n',
-    shell:  '#!/bin/bash\necho "Hello, World!"\nls -la\n',
     lisp:   '; Common Lisp\n(defun greet (name)\n  (format t "Hello, ~a!~%" name))\n\n(greet "World")\n',
-    r:      '# R\nprint("Hello, World!")\n',
-    rust:   '// Rust\nfn main() {\n    println!("Hello, World!");\n}\n',
-    sql:    '-- SQL\nSELECT *;\n',
-    go:     '// Go\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}\n',
-    typescript: '// TypeScript\nfunction greet(name: string): string {\n    return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));\n',
-    javascript: '// JavaScript\nfunction greet(name) {\n    return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));\n',
-    cobol: '* COBOL\nIDENTIFICATION DIVISION.\nPROGRAM-ID. HELLO-WORLD.\nPROCEDURE DIVISION.\n    DISPLAY "Hello, World!".\n    STOP RUN.\n',
-    //prolog: "% Prolog\n:- initialization(main).\n\nmain :-\n    write('Hello, World!'), nl.\n",
+    shell:  '#!/bin/bash\necho "Hello, World!"\nls -la\n',
+    prolog: "% Prolog\n:- initialization(main).\n\nmain :-\n    write('Hello, World!'), nl.\n"
 }
 
 // Editor Instance - the public API returned by createEditor

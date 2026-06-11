@@ -6,7 +6,6 @@ It adds a toolbar with language selection, Run button, and AI Feedback button, a
 */
 import { Terminal } from "@xterm/xterm"
 import { FitAddon } from "@xterm/addon-fit"
-import { AttachAddon } from "@xterm/addon-attach"
 import xtermCss from '@xterm/xterm/css/xterm.css?inline'
 
 import {
@@ -21,13 +20,9 @@ import {
 export type CodeEditorEvents = {
     'editor-change': { value: string }
     'editor-run': {code: string; language: string}
-    // editor-ai includes terminal context so the AI sees what happened at runtime, not just what the source code says
-    'editor-ai': {
-        code: string
-        language: string
-        terminalOutput: string // last batch run stdout + stderr output
-        sessionTranscript: string // interactive REPL input/output log
-    }
+    'editor-stop': {}
+    'terminal-input': {data: string} // Fired for every keystroke index.ts forwards to stdin, only while running.
+    'terminal-resize': {cols: number; rows: number} // When the terminal is resized index.ts notifies the backend PTY
 }
 
 export class CodeEditorElement extends HTMLElement {
@@ -35,8 +30,7 @@ export class CodeEditorElement extends HTMLElement {
     private terminal!: Terminal
     private fitAddon!: FitAddon // For resizing the terminal to fit its container
     private language: SupportedLanguage = 'java' // default language
-    private lastOutput: string = '' // store last terminal output for AI context
-    private sessionTranscript: string[] = [] // store REPL session transcript for AI context
+    private isRunning: boolean = false
 
     static get observedAttributes() {
         return ['language', 'code']
@@ -132,8 +126,11 @@ export class CodeEditorElement extends HTMLElement {
         }
 
         button:hover    { background: #008020; }
-
         button:disabled { background: #555; cursor: not-allowed; }
+
+        #stop-btn { background: #6b2020;}
+        #stop-btn:hover    { background: #8b3030; }
+        #stop-btn:disabled { background: #555; cursor: not-allowed; }
 
         .editor-area {
           flex: 1;
@@ -169,23 +166,15 @@ export class CodeEditorElement extends HTMLElement {
       <div class="toolbar">
         <select id="lang-select">
           <option value="c">C</option>
-          <option value="cobol">COBOL</option>
-          <option value="cpp">C++</option>
-          <option value="go">Go</option>
           <option value="java">Java</option>
-          <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
-          <option value="r">R</option>
-          <option value="rust">Rust</option>
           <option value="shell">Unix / Shell</option>
-          <option value="sql">SQL</option>
-          <option value="typescript">TypeScript</option>
           <option value="lisp">Common Lisp</option>
-          <!-- <option value="prolog">Prolog</option> -->
+          <option value="prolog">Prolog</option>
         </select>
 
         <button id="run-btn">&#9654; Run</button>
-        <button id="ai-btn">&#10022; AI Feedback</button>
+        <button id="kill-btn" disabled>&#9632; Stop</button>
 
       </div>
 
@@ -243,18 +232,28 @@ private initTerminal(){
       fontSize:     14,
       fontFamily:   'Menlo, Monaco, "Courier New", monospace',
       cursorBlink:  false,
-      cursorStyle: 'bar',
-      cursorInactiveStyle: 'none',
-      disableStdin: true,   // batch mode by default
+      //cursorStyle: 'bar',
+      //cursorInactiveStyle: 'none',
+      disableStdin: true,   // read-only mode by defualt
       convertEol:   true,   // \n → \r\n for correct line endings
     })
 
     this.fitAddon = new FitAddon()
     this.terminal.loadAddon(this.fitAddon)
     this.terminal.open(terminalArea)
-    this.fitAddon.fit()
+    requestAnimationFrame(() => this.fitAddon.fit())
 
     new ResizeObserver(() => this.fitAddon.fit()).observe(terminalArea)
+
+    // onData only fires when the code is being executed (while running)
+    this.terminal.onData((data) => {
+      this.emit('terminal-input', { data })
+    })
+
+    // Keeps the backend PTY (pseudo-terminal) dimensions in sync with what the ui is displaying
+    this.terminal.onResize(({cols, rows}) => {
+      this.emit('terminal-resize', { cols, rows })
+    })
 
     this.terminal.writeln('\x1b[37mReady. Click Run to execute code.\x1b[0m')
 
@@ -268,45 +267,19 @@ private bindToolbar(){
 
     // Run button event listener
     shadow.querySelector('#run-btn')?.addEventListener('click', () => {
-
-      //Clear previous context when a new run starts so the AI feedback only reads the most recent execution
-
-      this.lastOutput = ''
-
-      this.sessionTranscript = []
-
-      this.showOutput('', '', true)
-
+      this.terminal.clear()
       this.emit('editor-run', {code: this.editor.getValue(), language: this.language})
-
     })
 
-    // AI Feedback button event listener
-    shadow.querySelector('#ai-btn')?.addEventListener('click', () => {
-
-      // Include terminal context alongside the source code so the AI can see runtime behavior, not just static code
-
-      this.emit('editor-ai', {
-
-        code: this.editor.getValue(),
-
-        language: this.language,
-
-        terminalOutput: this.lastOutput,
-
-        sessionTranscript: this.sessionTranscript.join('\n'),
-
-      })
-
+    // Stop button event listener 
+    shadow.querySelector('#stop-btn')!.addEventListener('click', () => {
+      this.emit('editor-stop', {})
     })
 
     // Language selection event listener
     shadow.querySelector<HTMLSelectElement>('#lang-select')?.addEventListener('change', (e) => {
-
       this.language = (e.target as HTMLSelectElement).value as SupportedLanguage
-
       this.editor.setLanguage(this.language)
-
     })  
 
 } 
@@ -334,79 +307,27 @@ private bindToolbar(){
       if(select) select.value = lang
     }
 
-    // Display the output in the terminal
-    showOutput(stdout:string, stderr: string, loading = false){
+    
+    // Stream output to the terminal
+    streamOutput(data: string) {
+      this.terminal.write(data)
+    }
+
+    // Clear the terminal
+    clearTerminal() {
       this.terminal.clear()
-
-      if(loading) {
-        this.terminal.writeln('\x1b[33mRunning...\x1b[0m')
-        return
-      }
-
-      if(stdout || stderr) {
-        this.lastOutput = [
-          stdout ? `STDOUT:\n${stdout}` : '',
-          stderr ? `STDERR:\n${stderr}` : ''
-        ].filter(Boolean).join('\n\n')
-
-        if(stdout){
-          this.terminal.write(stdout)
-          if(!stdout.endsWith('\n')) this.terminal.writeln('')
-        }
-
-        if(stderr){
-          stderr.split('\n').forEach(line => {
-            if (line) this.terminal.writeln(`\x1b[31m${line}\x1b[0m`)
-          })
-        }
-
-        if(!stdout && !stderr){
-          this.terminal.writeln('\x1b[37mNo output.\x1b[0m')
-        }
-      }
     }
 
-    // For interactive languages, attach a WebSocket REPL session to the terminal
-    attachInteractiveSession(ws: WebSocket){
-        this.terminal.options.disableStdin = false
-        this.terminal.options.cursorBlink = true
-        this.terminal.loadAddon(new AttachAddon(ws))
-
-        // Listen for messages from the WebSocket and update the session transcript for AI context
-        ws.addEventListener('message', (event) => {
-          const text = typeof event.data === 'string' 
-            ? event.data 
-            : new TextDecoder().decode(event.data as ArrayBuffer)
-          if(text.trim()){
-            this.sessionTranscript.push(`[OUTPUT] ${text.replace(/\r?\n/g, '')}`)
-          }
-        })
-
-        // Listen for user input in the terminal and update the session transcript for AI context
-        this.terminal.onData((data) => {
-          if(data === '\r'){
-            this.sessionTranscript.push('[ENTER]')
-          }else if (data.charCodeAt(0) >= 32){
-            const lastEntry =  this.sessionTranscript[this.sessionTranscript.length - 1]
-            if(lastEntry?.startsWith('[INPUT]')){
-              this.sessionTranscript[this.sessionTranscript.length - 1] = lastEntry + data
-            }else{
-              this.sessionTranscript.push(`[INPUT] ${data}`)
-            }
-          }
-        })
+    // Controls terminal's interactive state
+    setRunningState(running: boolean) {
+      this.isRunning = running
+      const runBtn = this.shadowRoot!.querySelector<HTMLButtonElement>('#run-btn')!
+      const stopBtn = this.shadowRoot!.querySelector<HTMLButtonElement>('#stop-btn')!
+      runBtn.disabled = running
+      stopBtn.disabled = !running
+      this.terminal.options.cursorBlink = running
+      this.terminal.options.disableStdin = !running
     }
-
-    // Display AI Feedback in the terminal. This most likely will not be used.
-    /*
-        showFeedback(text: string){
-        this.terminal.writeln('')
-        this.terminal.writeln('\x1b[36m=== AI Feedback ===\x1b[0m')
-        text.split('\n').forEach(line => {
-          this.terminal.writeln(`\x1b[36m${line}\x1b[0m`)
-        })
-    }
-    */
 
     // Emit custom events to communicate with the outside world (e.g., when code changes, when Run is clicked, when AI Feedback is requested)
     private emit<K extends keyof CodeEditorEvents>(type: K, detail: CodeEditorEvents[K]){
