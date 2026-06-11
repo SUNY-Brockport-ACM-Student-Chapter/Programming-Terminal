@@ -1,5 +1,7 @@
 /*
 This file defines a custom web component that wraps createEditor in a Shadow DOM.
+(A Shadow Document Object model provides encapsulation for the component's internal structure and styles, preventing them from affecting or being affected by the rest of the page.)
+
 It adds a toolbar with language selection, Run button, and AI Feedback button, and integrates an xterm.js terminal for output display.
 */
 import { Terminal } from "@xterm/xterm"
@@ -45,6 +47,7 @@ export class CodeEditorElement extends HTMLElement {
         this.attachShadow({mode: 'open'}) // Use Shadow DOM to encapsulate styles and structure
     }
 
+    // Initialize the editor and terminal when the component is added to the DOM
     connectedCallback(){
         this.language = (this.getAttribute('language') as SupportedLanguage) ?? 'java'
         const initialCode = this.getAttribute('code') ?? startingCode[this.language]
@@ -54,11 +57,13 @@ export class CodeEditorElement extends HTMLElement {
         this.bindToolbar()
     }
 
+    // Clean up resources when the component is removed from the DOM
     disconnectedCallback(){
         this.editor?.destroy()
         this.terminal?.dispose()
     }
 
+    // Respond to attribute changes (e.g., language or code updates)
     attributeChangedCallback(name:string, _oldValue: string | null, newValue: string | null){
         if(!this.editor) return
 
@@ -74,6 +79,7 @@ export class CodeEditorElement extends HTMLElement {
         }
     }
 
+    // Build the component's internal DOM structure and styles
     private buildDOM(){
 
         const shadow = this.shadowRoot!
@@ -255,11 +261,12 @@ private initTerminal(){
 }
 
 
-
+// Set up event listeners for the toolbar buttons and language selector.
 private bindToolbar(){
 
     const shadow = this.shadowRoot!
 
+    // Run button event listener
     shadow.querySelector('#run-btn')?.addEventListener('click', () => {
 
       //Clear previous context when a new run starts so the AI feedback only reads the most recent execution
@@ -274,6 +281,7 @@ private bindToolbar(){
 
     })
 
+    // AI Feedback button event listener
     shadow.querySelector('#ai-btn')?.addEventListener('click', () => {
 
       // Include terminal context alongside the source code so the AI can see runtime behavior, not just static code
@@ -292,6 +300,7 @@ private bindToolbar(){
 
     })
 
+    // Language selection event listener
     shadow.querySelector<HTMLSelectElement>('#lang-select')?.addEventListener('change', (e) => {
 
       this.language = (e.target as HTMLSelectElement).value as SupportedLanguage
@@ -303,22 +312,29 @@ private bindToolbar(){
 } 
 
 
-    // Public API
-    getValue(): string {
+    /* 
+    Public API (Application Programming Interface) for interacting with the component 
+    */
+
+   // Get the current code from the editor
+    getValue(): string { 
         return this.editor.getValue()
     }
 
+    // Set the code in the editor
     setValue(val: string) {
         return this.editor.setValue(val)
     }
 
-    setLanguage(lang: SupportedLanguage) {
+    // Set the programming language
+    setLanguage(lang: SupportedLanguage) { 
       this.language = lang
       this.editor.setLanguage(lang)
       const select = this.shadowRoot!.querySelector<HTMLSelectElement>('#lang-select')
       if(select) select.value = lang
     }
 
+    // Display the output in the terminal
     showOutput(stdout:string, stderr: string, loading = false){
       this.terminal.clear()
 
@@ -350,11 +366,13 @@ private bindToolbar(){
       }
     }
 
+    // For interactive languages, attach a WebSocket REPL session to the terminal
     attachInteractiveSession(ws: WebSocket){
         this.terminal.options.disableStdin = false
         this.terminal.options.cursorBlink = true
         this.terminal.loadAddon(new AttachAddon(ws))
 
+        // Listen for messages from the WebSocket and update the session transcript for AI context
         ws.addEventListener('message', (event) => {
           const text = typeof event.data === 'string' 
             ? event.data 
@@ -364,6 +382,7 @@ private bindToolbar(){
           }
         })
 
+        // Listen for user input in the terminal and update the session transcript for AI context
         this.terminal.onData((data) => {
           if(data === '\r'){
             this.sessionTranscript.push('[ENTER]')
@@ -378,17 +397,22 @@ private bindToolbar(){
         })
     }
 
-    showFeedback(text: string){
+    // Display AI Feedback in the terminal. This most likely will not be used.
+    /*
+        showFeedback(text: string){
         this.terminal.writeln('')
         this.terminal.writeln('\x1b[36m=== AI Feedback ===\x1b[0m')
         text.split('\n').forEach(line => {
           this.terminal.writeln(`\x1b[36m${line}\x1b[0m`)
         })
     }
+    */
 
+    // Emit custom events to communicate with the outside world (e.g., when code changes, when Run is clicked, when AI Feedback is requested)
     private emit<K extends keyof CodeEditorEvents>(type: K, detail: CodeEditorEvents[K]){
         this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }))
     }
 }
 
+// Define the custom element, making it available for use in HTML as <code-editor></code-editor>
 customElements.define('code-editor', CodeEditorElement)
