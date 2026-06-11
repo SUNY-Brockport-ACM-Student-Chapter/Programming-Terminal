@@ -27,7 +27,7 @@ window.addEventListener('message', (event) => {
             editor.showOutput(payload.stdout ?? '', payload.stderr ?? '')
             break
     case 'AI_RESPONSE':
-        editor.showFeedback(payload.text)
+        //editor.showFeedback(payload.text)
         break
 }
 })
