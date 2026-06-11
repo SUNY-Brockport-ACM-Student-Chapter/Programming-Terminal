@@ -328,6 +328,7 @@ private bindToolbar(){
       this.terminal.options.cursorBlink = running
       this.terminal.options.disableStdin = !running
     }
+    */
 
     // Emit custom events to communicate with the outside world (e.g., when code changes, when Run is clicked, when AI Feedback is requested)
     private emit<K extends keyof CodeEditorEvents>(type: K, detail: CodeEditorEvents[K]){
