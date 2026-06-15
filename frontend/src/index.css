@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+/* Ensure xterm fills its container */
+.xterm {
+  height: 100%;
+}
+.xterm-viewport {
+  overflow-y: auto !important;
+}
