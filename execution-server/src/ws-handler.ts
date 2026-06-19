@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import type {Server} from 'http'
-import { ExecutionSession } from './executor.js'
-import { ClientMessage, LANGUAGES } from './types.js'
+import { ExecutionSession } from './executor'
+import { ClientMessage, LANGUAGES } from './types'
 
 export function attachWebSocketServer(server: Server): void{
     const wss = new WebSocketServer({server, path: '/ws'})

@@ -2,8 +2,8 @@ import Dockerode from 'dockerode'
 import * as pty from 'node-pty'
 import * as tar from 'tar-stream'
 import { WebSocket } from 'ws'
-import { containerPool } from './pool.js'
-import { Language, LANGUAGE_FILENAMES, LANGUAGE_RUN_COMMANDS, ServerMessage} from './types.js'
+import { containerPool } from './pool'
+import { Language, LANGUAGE_FILENAMES, LANGUAGE_RUN_COMMANDS, ServerMessage} from './types'
 
 const docker = new Dockerode
 const MAX_EXECUTION_MS = parseInt(process.env.MAX_EXECUTION_TIME ?? '15000', 10)
@@ -65,7 +65,11 @@ export class ExecutionSession
         }
 
         this.ptyProc.onData((data: string) => {
-            if(!this.stopped) this.send({type: 'output', data})
+            try{
+                if(!this.stopped) this.send({type: 'output', data})
+            }catch(err){
+                console.error('[executor] Error sending output', err)
+            }
         })
 
         this.ptyProc.onExit(async ({ exitCode }) => {
