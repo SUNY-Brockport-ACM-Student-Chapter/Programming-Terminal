@@ -96,8 +96,14 @@ class ContainerPool extends EventEmitter {
                 resolve(entry)
             }
         } catch(err){
-            console.log('[pool] Failed to spawn container:', err)
+            console.log('[pool] Failed to spawn container. Retrying in 5 seconds:', err)
             this.pool.delete(poolId)
+
+            setTimeout(() =>{
+                this.spawnContainer().catch(e=>
+                    console.error('[pool] Retry to spawn containers in the pool failed', e)
+                )
+            }, 5000)
         }
         }
 
@@ -125,6 +131,7 @@ class ContainerPool extends EventEmitter {
             console.warn('[pool] Could not clean stale containers:', err)
         }
     }
+
 }
 
 export const containerPool = new ContainerPool()

@@ -2,7 +2,7 @@ import type { Extension } from '@codemirror/state'
 import { forwardRef, useEffect, useImperativeHandle, useRef} from 'react'
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor,
          rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view'
-import { EditorState, Compartment }  from '@codemirror/state'
+import { EditorState, Compartment } from '@codemirror/state'
 import { defaultKeymap, history, historyKeymap }  from '@codemirror/commands'
 import { indentOnInput, syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, indentUnit } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -17,7 +17,7 @@ export interface EditorHandle {
 }
 
 interface EditorPaneProps {
-  language:        Language
+  language: Language
   onContentChange: (code: string) => void
 }
 
