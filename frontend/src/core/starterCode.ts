@@ -4,14 +4,14 @@ export const starterCode: Record<Language, string> = {
   python: 
     `# Python
     print("Hello, World!")`,
-  java: 
-    `// Java — public class must be named Main
-    public class Main {
+  java:
+  `// Java - public class must be named Main
+   import java.util.*;
+      public class Main {
         public static void main(String[] args) {
-            System.out.println("Hello, World!");
+          System.out.println("Hello, World!");
         }
-    }
-}`,
+    }`,
   c: 
     `// C
     #include <stdio.h>
@@ -19,17 +19,16 @@ export const starterCode: Record<Language, string> = {
     int main() {
         printf("Hello, World!\\n");
         return 0;
-    }
-}`,
+    }`,
   shell: 
     `#!/bin/sh
-        echo "Hello, World!" `,
+    echo "Hello, World!" `,
   lisp: 
     `; Common Lisp
     (format t "Hello, World!~%") `,
   prolog: 
     `% Prolog
-    :- initialization(main, main).
+    :- initialization(main).
     main :- write('Hello, World!'), nl. `,
 
 }

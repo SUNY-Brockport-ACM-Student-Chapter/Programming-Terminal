@@ -1,18 +1,25 @@
 export type Language = 'python' | 'java' | 'c' | 'shell' | 'lisp' | 'prolog'
 
+// LANGUAGES is used for the websocket to validate the language in incoming run requests
 export const LANGUAGES: Language[] = ['python', 'java', 'c', 'shell', 'lisp', 'prolog']
 
+/*
+Docker image name used for all containers in the pool. 
+An image contains all language runtimes, so any container can run any language
+*/
 export const RUNNER_IMAGE = 'programming-runner:latest'
 
+// Map each language to the source file written into /code/ inside the container before execution
 export const LANGUAGE_FILENAMES: Record<Language, string> = {
     python: 'main.py',
-    java: 'Main.java', // public class must be named Main
+    java: 'Main.java', // public class must be named Main. javac requires filename to match public class name
     c: 'main.c',
     shell: 'main.sh',
     lisp: 'main.lisp',
     prolog: 'main.pl',
 }
 
+// Map each language to the command run via docker exec.
 export const LANGUAGE_RUN_COMMANDS: Record<Language, string[]> = {
     python: ['python3', '-u', '/code/main.py'],
     java:   ['/bin/sh', '-c', 'cd /code && javac Main.java 2>&1 && java Main'],
