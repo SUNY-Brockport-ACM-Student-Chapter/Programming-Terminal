@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { RUNNER_IMAGE} from './types'
 
 const docker = new Dockerode()
-const POOL_SIZE = parseInt(process.env.POOL_SIZE ?? '5', 10)
+const POOL_SIZE = parseInt(process.env.POOL_SIZE ?? '5', 10) // 5 is the fallback size, 10 is base 10 (decimal, type of value we want)
 
 type ContainerState = 'warming' | 'ready' | 'in-use'
 
@@ -20,6 +20,7 @@ class ContainerPool extends EventEmitter {
     private waitQueue: Array<(c: PooledContainer) => void> = []
     private initialized = false
 
+    // Initialize the pool
     async init(): Promise<void>{
         if(this.initialized) return
         console.log('[pool] Initializing - ${POOL_SIZE} containers')
@@ -29,6 +30,7 @@ class ContainerPool extends EventEmitter {
         console.log('[pool] Initialization complete. ${this.pool.size} containers warmed')
     }
 
+    // Returns a ready container or waits until one is available
     async aquire(): Promise<PooledContainer>{
         const ready = [...this.pool.values()].find(e=> e.state === 'ready')
         if(ready){
@@ -38,6 +40,7 @@ class ContainerPool extends EventEmitter {
         return new Promise(resolve => this.waitQueue.push(resolve))
     }
 
+    // Remove used contianer from the pool and create a replacement
     async realease(poolId:string): Promise<void>{
         const entry = this.pool.get(poolId)
         if(!entry) return
@@ -45,8 +48,12 @@ class ContainerPool extends EventEmitter {
         this.destroyContainer(entry.dockerId).catch(err =>
             console.error('[pool] Replenish error:', err)
         )
+        this.spawnContainer().catch(err=>{
+            console.error('[pool] replenish error: ', err)
+        })
     }
 
+    // Returns a snapshot of the current pool state
     status(): {total: number; ready: number; inUse:number; warming: number}{
         let ready = 0, inUse = 0, warming = 0
         for(const e of this.pool.values()){
@@ -57,6 +64,7 @@ class ContainerPool extends EventEmitter {
         return {total: this.pool.size, ready, inUse, warming}
     }
 
+    // Destroy all containers when the server stops
     async shutdown(): Promise<void>{
         console.log('[pool] Shutting down. Destroying all managed containers')
         await Promise.allSettled(
@@ -65,14 +73,18 @@ class ContainerPool extends EventEmitter {
         this.pool.clear()
     }
 
+    // Create a new container and add it to the pool
     private async spawnContainer(): Promise<void> {
         const poolId = uuidv4()
+        // Reserve a slot in the pool
         const entry: PooledContainer = {
             poolId, dockerId: '', state: 'warming', createdAt: new Date(), 
         }
+        // Add to the pool
         this.pool.set(poolId, entry)
 
         try{
+            // Create a container with our configuration
             const container = await docker.createContainer({
                 Image: RUNNER_IMAGE,
                 Tty: true,
@@ -82,14 +94,15 @@ class ContainerPool extends EventEmitter {
                     Memory: 256 * 1024 * 1024, // 256MB
                     CpuPeriod: 100_000, // 100ms
                     CpuQuota: 50_000, // 50% of a CPU
-                    NetworkMode: 'none',
-                    AutoRemove: false, // We'll remove manually to ensure cleanup
+                    NetworkMode: 'none', // Network access is disabled
+                    AutoRemove: false, // We'll remove the container manually to ensure cleanup
                 },
             })
             await container.start()
             entry.dockerId = container.id
             entry.state = 'ready'
 
+            // If a user is waiting for a container, hand it to them instead of placing in the pool
             if(this.waitQueue. length > 0){
                 const resolve = this.waitQueue.shift()!
                 entry.state = 'in-use'
@@ -107,6 +120,7 @@ class ContainerPool extends EventEmitter {
         }
         }
 
+    // Forcefully stops and removes a container
     private async destroyContainer(dockerId: string): Promise<void>{
         if(!dockerId) return
         try{
@@ -116,6 +130,7 @@ class ContainerPool extends EventEmitter {
         } catch { /* already gone */}
     }
 
+    // Removes containers from previous server runs
     private async cleanupStaleManagedContainers(): Promise<void> {
         try{
             const stale = await docker.listContainers({
@@ -134,4 +149,5 @@ class ContainerPool extends EventEmitter {
 
 }
 
+// A single instance of the pool will be used to manage the containers
 export const containerPool = new ContainerPool()

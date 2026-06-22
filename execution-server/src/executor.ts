@@ -6,37 +6,48 @@ import { containerPool } from './pool'
 import { Language, LANGUAGE_FILENAMES, LANGUAGE_RUN_COMMANDS, ServerMessage} from './types'
 
 const docker = new Dockerode
-const MAX_EXECUTION_MS = parseInt(process.env.MAX_EXECUTION_TIME ?? '15000', 10)
+const MAX_EXECUTION_MS = parseInt(process.env.MAX_EXECUTION_TIME ?? '15000', 10) // This timeout kills an infinite loop
+console.log(`[executor] Timeout set to ${MAX_EXECUTION_MS}ms`) // this is for testing timeout, remove once finished
 
+// Represents a user's run session. Each Websocket gets its own ExecutionSession instance
 export class ExecutionSession
 {
     private poolId: string = ''
     private ptyProc: pty.IPty | null = null
     private stopped = false
     private timeoutId: ReturnType<typeof setTimeout> | null = null
+    private containerRef: Dockerode.Container | null = null
 
+    // Websocket connection to the frontend
     constructor(private ws: WebSocket) {}
 
+    // Run is called when the frontend signals that a user has hit the run button
     async run(language: Language, code: string): Promise<void>
     {
+        // Prevent starting a new session if a session is already active
         if(this.ptyProc)
         {
             this.send({type: 'error', message: 'Already running. Stop it first.'})
             return
         }
 
+        // Acquire container from the pool
         let container: Dockerode.Container
         let containerId: string = ''
         try{
             const entry = await containerPool.aquire()
+            // Store poolId so we can release this container when done
             this.poolId = entry.poolId
+            // Get a reference to Dockerode container handle
             container = docker.getContainer(entry.dockerId)
             containerId = entry.dockerId
+            this.containerRef = container
         }catch{
             this.send({type:'error', message: 'No container available. Try again.'})
             return
         }
 
+        // Copy source file into the container
         try{
             await copyFile(container, LANGUAGE_FILENAMES[language], code)
         }catch(err){
@@ -46,16 +57,19 @@ export class ExecutionSession
             return
         }
 
+        // Spawn the PTY via docker exec 
         const [bin, ...args] = LANGUAGE_RUN_COMMANDS[language]
+        // Notify the frontend that execution is about to start
         this.send({type: 'ready'})
         this.stopped = false
 
         try{
+            // Create pseudo-terminal and run commands inside it
             this.ptyProc = pty.spawn('docker', ['exec', '-it', container.id, bin, ...args], {
-                name: 'xterm-256color',
-                cols: 80, rows: 24,
-                cwd: process.cwd(),
-                env: process.env as Record<string, string>,
+                name: 'xterm-256color', // 256-color ANSI support 
+                cols: 80, rows: 24, // Initialize terminal dimensions 
+                cwd: process.cwd(), // sets working directory for node-pty process on the HOST
+                env: process.env as Record<string, string>, // pass host environment variables to the docker process
             })
         }catch(err){
             this.send({ type: 'error', message: `Failed to start process: ${err}`})
@@ -74,7 +88,8 @@ export class ExecutionSession
 
         this.ptyProc.onExit(async ({ exitCode }) => {
             this.clearTimeout()
-            if(!this.stopped) this.send({type: 'exit', code: exitCode})
+            if(!this.stopped) 
+                this.send({type: 'exit', code: exitCode})
             await this.cleanup()
         })
 
@@ -90,8 +105,29 @@ export class ExecutionSession
     async kill(): Promise<void>{
         this.stopped = true
         this.clearTimeout()
-        this.ptyProc?.kill()
+        try{
+             this.ptyProc?.kill()
+        }catch{}
         this.ptyProc = null
+
+        // Notify the frontend that the process was stopped
+        this.send({type: 'exit', code: null})
+
+        // Kill all processes inside the container via docker exec
+        if(this.containerRef)
+        {
+            try{
+                const exec = await this.containerRef.exec({
+                    Cmd: ['pkill', '-9', '-f', '/code/'], // kills any process whose command containes /code/
+                    AttachStdout: false,
+                    AttachStderr: false,
+                })
+                await exec.start({Detach: true})
+            }catch{
+                //  pkill returns exit code 1 if no processes matched, which is not a real error
+            }
+            this.containerRef = null
+        }
         await this.cleanup()
     }
 

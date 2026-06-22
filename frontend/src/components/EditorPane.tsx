@@ -3,7 +3,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef} from 'react'
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor,
          rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
-import { defaultKeymap, history, historyKeymap }  from '@codemirror/commands'
+import { defaultKeymap, history, historyKeymap, indentWithTab }  from '@codemirror/commands'
 import { indentOnInput, syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, indentUnit } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { getLanguageExtension } from '../core/languages'
@@ -56,6 +56,7 @@ export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
             keymap.of([
               ...defaultKeymap,
               ...historyKeymap,
+              indentWithTab,
             ]),
             indentUnit.of('    '),
             oneDark,
