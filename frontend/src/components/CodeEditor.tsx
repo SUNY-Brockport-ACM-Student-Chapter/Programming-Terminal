@@ -6,17 +6,23 @@ import { TerminalPane, type TerminalHandle } from './TerminalPane'
 import { useExecutionSocket } from '../hooks/useExecutionSocket'
 import type { Language } from '../types'
 
+// Defines what the parent (App.tsx) passes to this component
 interface CodeEditorProps {
   language: Language
   wsUrl:    string
   onLanguageChange?: (lang: Language) => void
 }
 
+// CodeEditor is the main component that owns all state and wires everything together
 export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProps) {
+  // Track if a process is currently executing
   const [isRunning, setIsRunning] = useState(false)
-  const [layout, setLayout]       = useState<'vertical' | 'horizontal'>('vertical')
+  // layout controls the panel orientation 
+  const [layout, setLayout] = useState<'vertical' | 'horizontal'>('vertical')
 
+  // gives access to EditorPane's imperative API
   const editorRef   = useRef<EditorHandle>(null)
+  // gives access to TerminalPane's imperative API
   const terminalRef = useRef<TerminalHandle>(null)
 
   // WebSocket execution hook
@@ -47,6 +53,7 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
   // Run handler
   const handleRun = useCallback(() => {
     const code = editorRef.current?.getValue() ?? ''
+    // Don't send an empty run request
     if (!code.trim()) return
     terminalRef.current?.clear()
     run(language, code)

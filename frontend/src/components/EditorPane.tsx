@@ -10,31 +10,36 @@ import { getLanguageExtension } from '../core/languages'
 import { starterCode } from '../core/starterCode'
 import type { Language } from '../types'
 
-
+// Defines imperative API the parent (CodeEditor) can call
 export interface EditorHandle {
-  getValue(): string
-  setValue(code: string): void
+  getValue(): string // returns current content of the editor
+  setValue(code: string): void // replaces the editor content with new code 
 }
 
+
 interface EditorPaneProps {
-  language: Language
-  onContentChange: (code: string) => void
+  language: Language // currently selected language
+  onContentChange: (code: string) => void // called whenever the editor content changes 
 }
 
 const languageCompartment = new Compartment()
 
 export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
   ({ language, onContentChange }, ref) => {
+    // Points to div that CodeMirror will render into 
     const containerRef = useRef<HTMLDivElement>(null)
-    const viewRef      = useRef<EditorView | null>(null)
+    // Holds the CodeMirror Editorview instance
+    const viewRef = useRef<EditorView | null>(null)
     // Keep a stable ref to onContentChange to avoid recreating the editor
     const onChangeRef  = useRef(onContentChange)
+    // Update the ref whenever the callback prop changes
     useEffect(() => { onChangeRef.current = onContentChange }, [onContentChange])
 
     // Initialize CodeMirror once on mount
     useEffect(() => {
       if (!containerRef.current) return
 
+      // Create initial editor state will all extensions configured
       const view = new EditorView({
         state: EditorState.create({
           doc: starterCode[language],
@@ -72,13 +77,16 @@ export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
             }),
           ],
         }),
+        // mount the editor into the container div
         parent: containerRef.current,
       })
 
+      // Store view in ref for later use
       viewRef.current = view
       // Notify parent of initial content
       onChangeRef.current(view.state.doc.toString())
 
+      // Destroy the Codemirror instance when the component unmounts
       return () => {
         view.destroy()
         viewRef.current = null
@@ -100,7 +108,9 @@ export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
 
     // Imperative API for Programming Terminal parent
     useImperativeHandle(ref, () => ({
+      // returns the current content of the editor as a plain string
       getValue: () => viewRef.current?.state.doc.toString() ?? '',
+      // Replaces the entire editor content with the provided code string 
       setValue: (code: string) => {
         if (!viewRef.current) return
         viewRef.current.dispatch({
@@ -113,6 +123,7 @@ export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
       },
     }))
 
+    // Render a div that Codemirror populates 
     return (
       <div
         ref={containerRef}

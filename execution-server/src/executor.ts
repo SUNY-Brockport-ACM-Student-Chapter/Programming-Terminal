@@ -78,36 +78,51 @@ export class ExecutionSession
             return 
         }
 
+        // Stream PTY output to the frontend. This fires whenever the running process writes to its stdout or stderr
         this.ptyProc.onData((data: string) => {
             try{
+                // Only forward output if we haven't killed the process 
                 if(!this.stopped) this.send({type: 'output', data})
             }catch(err){
                 console.error('[executor] Error sending output', err)
             }
         })
 
+        // Handles process exit. Fires when the docker exec process terminates.
         this.ptyProc.onExit(async ({ exitCode }) => {
+            // Cancel the safety timeout since the process ended
             this.clearTimeout()
+            // Only send the exit message if we didn't stop the process ourselves
             if(!this.stopped) 
                 this.send({type: 'exit', code: exitCode})
+            // Release the container back to the pool and clear the session
             await this.cleanup()
         })
 
+        // Safety timeout for infinite loops or a program that runs for too long
         this.timeoutId = setTimeout(() => {
+            // Alert the user that they have reached max session time
             this.send({ type: 'output', data: '\r\n[Execution time limit reached]\r\n'})
+            // Kill the process
             this.kill()
         }, MAX_EXECUTION_MS)
     }
 
+    // Forwards keystrokes from the terminal to the running process's stdin
     writeInput(data: string) {this.ptyProc?.write(data)}
+    // Updates the PTY dimensions when the frontend terminal is resized 
     resize(cols: number, rows: number) { this.ptyProc?.resize(cols, rows)}
 
+    // Forcefully terminate the running process
     async kill(): Promise<void>{
         this.stopped = true
         this.clearTimeout()
         try{
+            // Send SIGKILL to the docker exec process, which terminates the program
              this.ptyProc?.kill()
         }catch{}
+
+        // Clear the PTY reference 
         this.ptyProc = null
 
         // Notify the frontend that the process was stopped
@@ -128,9 +143,11 @@ export class ExecutionSession
             }
             this.containerRef = null
         }
+        // Release the container
         await this.cleanup()
     }
 
+    // Releases the container back to the pool and resets session state 
     private async cleanup(): Promise<void>{
         this.ptyProc = null
         if(this.poolId){
@@ -139,37 +156,50 @@ export class ExecutionSession
         }
     }
 
+    // Cancels safety timer
     private clearTimeout(){
         if(this.timeoutId){
             clearTimeout(this.timeoutId); this.timeoutId = null
         }
     }
 
+    // Serializes a SErverMessage to JSON and sends it over the WebSocket
     private send(msg: ServerMessage){
+        // Check if the connection is still active
         if(this.ws.readyState === WebSocket.OPEN){
             this.ws.send(JSON.stringify(msg))
         }
     }
 }
 
+// Copies a source code file into the /code/ directory inside a container
 async function copyFile(container: Dockerode.Container, filename: string, content: string): Promise<void>
 {
         return new Promise((resolve, reject) => 
         {
+            // Create a tar archive builder
             const pack = tar.pack()
+            // Convert the source code string to a Buffer (raw bytes) using UTF-8 encoding
             const buf = Buffer.from(content, 'utf8')
+            // A a file entry to the tar archive
             pack.entry({name:filename, size: buf.length, mode: 0o644}, buf, (err: any) => 
             {
+                // If adding the entry failed, reject the outer Promise
                 if(err) return reject(err)
+                // Signal we are done adding files to the archive
                 pack.finalize()
             })
+            // Collect the tar archive bytes as they're generated 
             const chunks: Buffer[] = []
             pack.on('data', (c: Buffer) => chunks.push(c))
-            pack.on('error', reject)
+            pack.on('error', reject) // Reject the Promise if the archive fails
+
+            // When the archive is complete, upload it to the container
             pack.on('end', async () => 
             {
                 try{
                     await container.putArchive(Buffer.concat(chunks), {path: '/code'})
+                    // Resolve the outer Promise, the file is now in the container
                     resolve()
                 }catch (e) {
                     reject(e)
