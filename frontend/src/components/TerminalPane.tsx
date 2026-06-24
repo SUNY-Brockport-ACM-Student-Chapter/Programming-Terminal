@@ -28,6 +28,7 @@ export const TerminalPane = forwardRef<TerminalHandle, TerminalPaneProps>(
     useEffect(() => {
       if (!containerRef.current) return
 
+      // Create terminal instance with our configuration 
       const terminal = new Terminal({
         theme: {
           background: '#0d0d0d',
@@ -67,6 +68,7 @@ export const TerminalPane = forwardRef<TerminalHandle, TerminalPaneProps>(
       const observer = new ResizeObserver(() => fitAddonRef.current?.fit())
       observer.observe(containerRef.current)
 
+      // Dispose the terminal and disconnect the observer on unmount
       return () => {
         observer.disconnect()
         terminal.dispose()

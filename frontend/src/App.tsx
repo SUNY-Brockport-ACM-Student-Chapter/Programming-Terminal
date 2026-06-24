@@ -31,10 +31,13 @@ export function App() {
         setLanguage(payload.language)
       }
     }
+    // Register the handler on the window to catch postMessage calls
     window.addEventListener('message', handler)
+    // remove the listener when the App unmounts
     return () => window.removeEventListener('message', handler)
   }, [])
 
+  // Render the CodeEditor with the current language and WebSocket URL
   return (
     <CodeEditor
       language={language}

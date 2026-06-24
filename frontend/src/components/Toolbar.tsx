@@ -14,9 +14,11 @@ interface ToolbarProps {
 export function Toolbar({
   language,
   isRunning,
+  layout,
   onRun,
   onStop,
   onLanguageChange,
+  onLayoutToggle,
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-[#2d2d2d] border-b border-[#444] flex-shrink-0">
@@ -35,17 +37,25 @@ export function Toolbar({
       <button
         onClick={onRun}
         disabled={isRunning}
-        className="bg-[#0e639c] hover:bg-[#1177bb] disabled:bg-[#555] disabled:cursor-not-allowed text-white text-sm px-3 py-1 rounded"
+        className="bg-[#057019] hover:bg-[#079C23] disabled:bg-[#555] disabled:cursor-not-allowed text-white text-sm px-3 py-1 rounded"
       >
-        ▶ Run
+      ➤ Run
       </button>
 
       <button
         onClick={onStop}
         disabled={!isRunning}
-        className="bg-[#6b2020] hover:bg-[#8b3030] disabled:bg-[#555] disabled:cursor-not-allowed text-white text-sm px-3 py-1 rounded"
+        className="bg-[#B12020] hover:bg-[#CC2525] disabled:bg-[#555] disabled:cursor-not-allowed text-white text-sm px-3 py-1 rounded"
       >
         ■ Stop
+      </button>
+
+      <button
+        onClick={onLayoutToggle}
+        title={layout === 'vertical' ? 'Move terminal to the right' : 'Move terminal below'}
+        className="ml-auto bg-[#3c3c3c] hover:bg-[#505050] text-[#d4d4d4] text-sm px-3 py-1 rounded"
+      >
+        {layout === 'vertical' ? '⎅ Terminal Right' : '⊟ Terminal Below'}
       </button>
     </div>
   )

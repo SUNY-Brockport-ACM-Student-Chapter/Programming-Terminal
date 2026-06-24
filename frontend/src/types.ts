@@ -5,14 +5,15 @@ export const LANGUAGES: Language[] = ['python', 'java', 'c', 'shell', 'lisp', 'p
 // WebSocket protocol 
 //frontend to backend messages
 export type ClientMessage =
-| { type: 'run'; language: Language; code: string}
-| { type: 'input'; data: string}
-| { type: 'resize'; cols: number; rows: number}
-| { type: 'stop'}
+| { type: 'run'; language: Language; code: string} // sent when a user clicks run
+| { type: 'input'; data: string} // sent for every keystroke
+| { type: 'resize'; cols: number; rows: number} // sent when the terminal's pixel dimensions change
+| { type: 'stop'} // sent when a user clicks stop
 
+// backend to frontend messages 
 export type ServerMessage =
-| { type: 'ready'}
-| { type: 'output'; data: string}
-| { type: 'exit'; code: number | null}
-| { type: 'error'; message: string}
+| { type: 'ready'} // sent once a container has been acquired
+| { type: 'output'; data: string} // sent for each chunk of PTY output from the running process
+| { type: 'exit'; code: number | null} // sent when the process finishes or was killed
+| { type: 'error'; message: string} // sent when something goes wrong on the server side 
 

@@ -26,7 +26,7 @@ export const LANGUAGE_RUN_COMMANDS: Record<Language, string[]> = {
     c:      ['/bin/sh', '-c', 'cd /code && gcc -o main main.c 2>&1 && ./main'],
     shell:  ['/bin/sh', '/code/main.sh'],
     lisp:   ['sbcl', '--script', '/code/main.lisp'],
-    prolog: ['swipl', '-q', '-g', "consult('/code/main.pl'),halt", '-t', 'halt'],
+    prolog: ['swipl', '-q', '-g', "consult('/code/main.pl'), halt", '-t', 'halt'],
 }
 
 // Frontend -> Backend messages
