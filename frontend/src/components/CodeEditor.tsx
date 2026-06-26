@@ -25,6 +25,9 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
   // gives access to TerminalPane's imperative API
   const terminalRef = useRef<TerminalHandle>(null)
 
+  // Used to accumulate output for the ai feedback
+  const outputRef = useRef<string>('')
+
   // WebSocket execution hook
   const { run, stop, sendInput, sendResize } = useExecutionSocket({
     wsUrl,
@@ -35,13 +38,31 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
 
     onOutput: useCallback((data: string) => {
       terminalRef.current?.write(data)
+      outputRef.current += data
     }, []),
 
-    onExit: useCallback((code: number | null) => {
+    onExit: useCallback(async (code: number | null) => {
       setIsRunning(false)
       terminalRef.current?.write(
         `\r\n\x1b[90m[Process exited with code ${code ?? 0}]\x1b[0m\r\n`
       )
+
+      // Analyze code and output after exit for ai feedback
+      const currentCode = editorRef.current?.getValue() ?? ''
+      const currentOutput = outputRef.current
+      outputRef.current = ''
+
+      try{
+        const res = await fetch('http://localhost:3001/api/analyze',{
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({code: currentCode, output: currentOutput}),
+        })
+        const {analysis} = await res.json()
+        console.log('[analyze]', analysis)
+      }catch(err){
+        console.error('[analyze] Failed: ', err)
+      }
     }, []),
 
     onError: useCallback((message: string) => {
@@ -83,7 +104,13 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
           <EditorPane
             ref={editorRef}
             language={language}
-            onContentChange={() => {}}
+            // Tell the platform that the user has typed code that needs to be saved and forward the changes
+            onContentChange={(code) => {
+              window.parent.postMessage({ 
+                type: 'CODE_CHANGE', // The platfrom will have to listen for this message type
+                payload: {code, language}
+              }, '*')
+            }}
           />
         </Panel>
 

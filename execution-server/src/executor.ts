@@ -163,7 +163,7 @@ export class ExecutionSession
         }
     }
 
-    // Serializes a SErverMessage to JSON and sends it over the WebSocket
+    // Serializes a ServerMessage to JSON and sends it over the WebSocket
     private send(msg: ServerMessage){
         // Check if the connection is still active
         if(this.ws.readyState === WebSocket.OPEN){
