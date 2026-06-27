@@ -40,7 +40,7 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
     onExit: useCallback((code: number | null) => {
       setIsRunning(false)
       terminalRef.current?.write(
-        `\r\n\x1b[90m[Process exited with code ${code ?? 0}]\x1b[0m\r\n`
+        `\r\n\x1b[37m[Process exited with code ${code ?? 0}]\x1b[0m\r\n`
       )
     }, []),
 
