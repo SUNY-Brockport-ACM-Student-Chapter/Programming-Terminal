@@ -106,12 +106,14 @@ export function useExecutionSocket({
 
             // fires when the connection attempt fails entirely 
             socket.addEventListener('error', () => {
-                onErrorRef.current('Could not connect to execution server. Make sure it is running.')
+                if(!destroyed){
+                    onErrorRef.current('Could not connect to execution server. Make sure it is running.')
+                }
             })
         }
 
-        // Start the initial connection 
-        connect()
+        // Start the initial connection. Wrapped around a timer to give the page time to fully render and connect to the server
+        reconnectTimer = setTimeout(connect, 2000)
 
         // Cleanup function when the component unmounts or wsUrl changes
         return () => {
