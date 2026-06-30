@@ -1,3 +1,6 @@
+/*
+***This page is for if a project wants to embed the programming-terminal as an iframe***
+*/
 import { useState, useEffect } from 'react'
 import { CodeEditor } from './components/CodeEditor'
 import type { Language } from './types'

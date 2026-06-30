@@ -1,10 +1,19 @@
 {
-    "name": "programming-terminal",
+    "name": "@acm-brockport/programming-terminal",
+    "version": "1.0.0",
     "private": true,
+    "main": "./frontend/dist/programming-terminal.cjs",
+    "module": "./frontend/dist/programming-terminal.js",
+    "types": "./frontend/dist/index.d.ts",
+    "exports": {
+        ".":{
+            "import": "./frontend/dist/programming-terminal.js",
+            "require": "./frontend/dist/programming-terminal.cjs"
+        }
+    },
     "scripts": {
         "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix execution-server\"",
-        "build:frontend": "npm run build --prefix frontend",
-        "build:execution-server": "npm run build --prefix execution-server",
+        "build": "npm run build --prefix frontend",
         "install:all": "npm install --prefix frontend && npm install --prefix execution-server"
     },
     "devDependencies": {

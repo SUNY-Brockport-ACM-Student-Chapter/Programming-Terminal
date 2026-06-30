@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Group, Panel, Separator} from 'react-resizable-panels'
 import { Toolbar } from './Toolbar'
 import { EditorPane, type EditorHandle } from './EditorPane'
@@ -10,11 +10,13 @@ import type { Language } from '../types'
 interface CodeEditorProps {
   language: Language
   wsUrl:    string
+  initialCode?: string 
   onLanguageChange?: (lang: Language) => void
+  onCodeChange?: (code:string) => void 
 }
 
 // CodeEditor is the main component that owns all state and wires everything together
-export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProps) {
+export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onCodeChange }: CodeEditorProps) {
   // Track if a process is currently executing
   const [isRunning, setIsRunning] = useState(false)
   // layout controls the panel orientation 
@@ -24,6 +26,12 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
   const editorRef   = useRef<EditorHandle>(null)
   // gives access to TerminalPane's imperative API
   const terminalRef = useRef<TerminalHandle>(null)
+
+  useEffect(() => {
+    if(initialCode !== undefined){
+      editorRef.current?.setValue(initialCode)
+    }
+  }, [initialCode])
 
   // WebSocket execution hook
   const { run, stop, sendInput, sendResize } = useExecutionSocket({
@@ -83,7 +91,7 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
           <EditorPane
             ref={editorRef}
             language={language}
-            onContentChange={() => {}}
+            onContentChange={(code) => {onCodeChange?.(code)}}
           />
         </Panel>
 
