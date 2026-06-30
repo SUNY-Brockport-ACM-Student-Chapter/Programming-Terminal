@@ -1,4 +1,4 @@
-// Used for testing purposes only.
+// Used for testing purposes only. Specifically for mounting the App into the DOM
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
