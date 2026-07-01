@@ -6,7 +6,7 @@ import { TerminalPane, type TerminalHandle } from './TerminalPane'
 import { useExecutionSocket } from '../hooks/useExecutionSocket'
 import type { Language } from '../types'
 
-// Defines what the parent (App.tsx) passes to this component
+// Defines what the parent passes to this component
 interface CodeEditorProps {
   language: Language
   wsUrl:    string
@@ -38,7 +38,7 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
 
     onOutput: useCallback((data: string) => {
       terminalRef.current?.write(data)
-      outputRef.current += data
+      outputRef.current += data // retrieve output that is being sent to the terminal for ai feedback
     }, []),
 
     onExit: useCallback(async (code: number | null) => {
@@ -48,8 +48,8 @@ export function CodeEditor({ language, wsUrl, onLanguageChange }: CodeEditorProp
       )
 
       // Analyze code and output after exit for ai feedback
-      const currentCode = editorRef.current?.getValue() ?? ''
-      const currentOutput = outputRef.current
+      const currentCode = editorRef.current?.getValue() ?? '' // get the user's code from the editor
+      const currentOutput = outputRef.current // get the output from the terminal
       outputRef.current = ''
 
       try{

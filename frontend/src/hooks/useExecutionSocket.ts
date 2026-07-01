@@ -110,8 +110,8 @@ export function useExecutionSocket({
             })
         }
 
-        // Start the initial connection 
-        connect()
+        // Start the initial connection. Wrapped around a timer to give the page time to fully render and connect to the server
+        reconnectTimer = setTimeout(connect, 2000)
 
         // Cleanup function when the component unmounts or wsUrl changes
         return () => {

@@ -40,7 +40,8 @@ router.post('/analyze', async(req, res) =>{
     console.log('[analyze] API key loaded:', !!process.env.GEMINI_API_KEY)
     const { code, output } = req.body
 
-    const testQuestion = "Write a program that uses a for loop to print the numbers 1 to 10"
+    // Example question for testing
+    const testQuestion = "Write a function that takes in two numbers and returns their sum."
 
     try{
         const analysis = await ai.models.generateContent({
