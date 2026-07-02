@@ -49,6 +49,8 @@ export function useExecutionSocket({
         let reconnectTimer: ReturnType<typeof setTimeout> | null = null
         // Flag for when cleanup runs to prevent reconnection attempts after cleanup
         let destroyed = false
+        // Flag to track if this is the first connection attempt
+        let firstAttempt = true
 
         // Creates new WebSocket and sets up all its event listeners 
         function connect() {
@@ -106,9 +108,10 @@ export function useExecutionSocket({
 
             // fires when the connection attempt fails entirely 
             socket.addEventListener('error', () => {
-                if(!destroyed){
+                if(!destroyed && !firstAttempt){
                     onErrorRef.current('Could not connect to execution server. Make sure it is running.')
                 }
+                firstAttempt = false
             })
         }
 
