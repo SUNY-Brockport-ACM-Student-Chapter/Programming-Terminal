@@ -23,11 +23,11 @@ class ContainerPool extends EventEmitter {
     // Initialize the pool
     async init(): Promise<void>{
         if(this.initialized) return
-        console.log('[pool] Initializing - ${POOL_SIZE} containers')
+        console.log(`[pool] Initializing - ${POOL_SIZE} containers`)
         await this.cleanupStaleManagedContainers()
         await Promise.all(Array.from({length: POOL_SIZE}, () => this.spawnContainer()))
         this.initialized = true
-        console.log('[pool] Initialization complete. ${this.pool.size} containers warmed')
+        console.log(`[pool] Initialization complete. ${this.pool.size} containers warmed`)
     }
 
     // Returns a ready container or waits until one is available
@@ -141,7 +141,7 @@ class ContainerPool extends EventEmitter {
                 stale.map(c => docker.getContainer(c.Id).remove({force: true}).catch(() => {}))
             )
             if(stale.length > 0)
-                console.log('[pool] Cleaned up ${stale.length} stale containers')
+                console.log(`[pool] Cleaned up ${stale.length} stale containers`)
         } catch(err){
             console.warn('[pool] Could not clean stale containers:', err)
         }
