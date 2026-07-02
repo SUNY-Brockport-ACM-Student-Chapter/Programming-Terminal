@@ -24957,13 +24957,13 @@ function cO({ wsUrl: e, onReady: t, onOutput: r, onExit: a, onError: o }) {
 	}, [a]), i(() => {
 		p.current = o;
 	}, [o]), i(() => {
-		let t = null, n = !1;
-		function r() {
+		let t = null, n = !1, r = !0;
+		function i() {
 			if (n) return;
-			let i = new WebSocket(e);
-			s.current = i, i.addEventListener("open", () => {
+			let a = new WebSocket(e);
+			s.current = a, a.addEventListener("open", () => {
 				console.log("[editor] Connected to execution backend");
-			}), i.addEventListener("message", (e) => {
+			}), a.addEventListener("message", (e) => {
 				let t;
 				try {
 					t = JSON.parse(e.data);
@@ -24984,13 +24984,13 @@ function cO({ wsUrl: e, onReady: t, onOutput: r, onExit: a, onError: o }) {
 						c.current = !1, p.current(t.message);
 						break;
 				}
-			}), i.addEventListener("close", () => {
-				console.log("[editor] WebSocket closed - reconnecting..."), c.current = !1, n || (t = setTimeout(r, 3e3));
-			}), i.addEventListener("error", () => {
-				n || p.current("Could not connect to execution server. Make sure it is running.");
+			}), a.addEventListener("close", () => {
+				console.log("[editor] WebSocket closed - reconnecting..."), c.current = !1, n || (t = setTimeout(i, 3e3));
+			}), a.addEventListener("error", () => {
+				!n && !r && p.current("Could not connect to execution server. Make sure it is running."), r = !1;
 			});
 		}
-		return t = setTimeout(r, 2e3), () => {
+		return t = setTimeout(i, 2e3), () => {
 			n = !0, t && clearTimeout(t), s.current?.close(), s.current = null;
 		};
 	}, [e]);
