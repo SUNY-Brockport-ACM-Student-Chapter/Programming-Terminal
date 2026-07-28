@@ -5,6 +5,7 @@ interface ToolbarProps {
   language:         Language
   isRunning:        boolean
   layout:           'vertical' | 'horizontal'
+  allowedLanguages?: Language[]
   onRun:            () => void
   onStop:           () => void
   onLanguageChange: (lang: Language) => void
@@ -15,11 +16,13 @@ export function Toolbar({
   language,
   isRunning,
   layout,
+  allowedLanguages,
   onRun,
   onStop,
   onLanguageChange,
   onLayoutToggle,
 }: ToolbarProps) {
+  const selectableLanguages = allowedLanguages && allowedLanguages.length > 0 ? allowedLanguages : LANGUAGES
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-[#2d2d2d] border-b border-[#444] flex-shrink-0">
       <select
@@ -27,7 +30,7 @@ export function Toolbar({
         onChange={(e) => onLanguageChange(e.target.value as Language)}
         className="bg-[#3c3c3c] text-[#d4d4d4] border border-[#555] rounded px-2 py-1 text-sm cursor-pointer"
       >
-        {LANGUAGES.map((lang) => (
+        {selectableLanguages.map((lang) => (
           <option key={lang} value={lang}>
             {LANGUAGE_LABELS[lang]}
           </option>

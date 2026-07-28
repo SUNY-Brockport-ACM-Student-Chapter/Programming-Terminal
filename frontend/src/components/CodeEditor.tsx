@@ -11,12 +11,14 @@ interface CodeEditorProps {
   language: Language
   wsUrl:    string
   initialCode?: string 
+  allowedLanguages?: Language[]
   onLanguageChange?: (lang: Language) => void
   onCodeChange?: (code:string) => void 
+  onExecutionResult?: (result: {output: string; exitCode: number | null; error?: string}) => void
 }
 
 // CodeEditor is the main component that owns all state and wires everything together
-export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onCodeChange }: CodeEditorProps) {
+export function CodeEditor({ language, wsUrl, initialCode, allowedLanguages, onLanguageChange, onCodeChange, onExecutionResult }: CodeEditorProps) {
   // Track if a process is currently executing
   const [isRunning, setIsRunning] = useState(false)
   // layout controls the panel orientation 
@@ -26,6 +28,9 @@ export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onC
   const editorRef   = useRef<EditorHandle>(null)
   // gives access to TerminalPane's imperative API
   const terminalRef = useRef<TerminalHandle>(null)
+
+  // Accumulates stdout/stderr for the current program being run, so it can be handed to the onExecutionResult once the process exits
+  const outputBufferRef = useRef('')
 
   useEffect(() => {
     if(initialCode !== undefined){
@@ -42,6 +47,7 @@ export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onC
     }, []),
 
     onOutput: useCallback((data: string) => {
+      outputBufferRef.current += data
       terminalRef.current?.write(data)
     }, []),
 
@@ -50,12 +56,14 @@ export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onC
       terminalRef.current?.write(
         `\r\n\x1b[37m[Process exited with code ${code ?? 0}]\x1b[0m\r\n`
       )
-    }, []),
+      onExecutionResult?.({output: outputBufferRef.current, exitCode: code ?? null})
+    }, [onExecutionResult]),
 
     onError: useCallback((message: string) => {
       setIsRunning(false)
       terminalRef.current?.write(`\r\n\x1b[31m[Error: ${message}]\x1b[0m\r\n`)
-    }, []),
+      onExecutionResult?.({output: outputBufferRef.current, exitCode: null, error: message})
+    }, [onExecutionResult]),
   })
 
   // Run handler
@@ -63,6 +71,7 @@ export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onC
     const code = editorRef.current?.getValue() ?? ''
     // Don't send an empty run request
     if (!code.trim()) return
+    outputBufferRef.current = ''
     terminalRef.current?.clear()
     run(language, code)
   }, [language, run])
@@ -78,6 +87,7 @@ export function CodeEditor({ language, wsUrl, initialCode, onLanguageChange, onC
         language={language}
         isRunning={isRunning}
         layout={layout}
+        allowedLanguages={allowedLanguages}
         onRun={handleRun}
         onStop={stop}
         onLanguageChange={(lang) => onLanguageChange?.(lang)}
