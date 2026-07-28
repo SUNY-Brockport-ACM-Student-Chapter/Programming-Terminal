@@ -1,10 +1,16 @@
 {
-    "name": "@acm-brockport/programming-terminal",
+    "name": "@suny-brockport-acm-student-chapter/programming-terminal",
     "version": "1.0.0",
-    "private": true,
     "main": "./frontend/dist/programming-terminal.cjs",
     "module": "./frontend/dist/programming-terminal.js",
     "types": "./frontend/dist/index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SUNY-Brockport-ACM-Student-Chapter/Programming-Terminal.git"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    },
     "exports": {
         ".":{
             "types": "./frontend/dist/index.d.ts",
