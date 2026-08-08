@@ -9,29 +9,19 @@ An image contains all language runtimes, so any container can run any language
 */
 export const RUNNER_IMAGE = 'programming-runner:latest'
 
-// Map each language to the source file written into /code/ inside the container before execution
-export const LANGUAGE_FILENAMES: Record<Language, string> = {
-    python: 'main.py',
-    java: 'Main.java', // public class must be named Main. javac requires filename to match public class name
-    c: 'main.c',
-    shell: 'main.sh',
-    lisp: 'main.lisp',
-    prolog: 'main.pl',
-}
-
 // Map each language to the command run via docker exec.
-export const LANGUAGE_RUN_COMMANDS: Record<Language, string[]> = {
-    python: ['python3', '-u', '/code/main.py'],
-    java:   ['/bin/sh', '-c', 'cd /code && javac Main.java 2>&1 && java Main'],
-    c:      ['/bin/sh', '-c', 'cd /code && gcc -o main main.c 2>&1 && ./main'],
-    shell:  ['/bin/sh', '/code/main.sh'],
-    lisp:   ['sbcl', '--script', '/code/main.lisp'],
-    prolog: ['swipl', '-q', '-g', "consult('/code/main.pl'), halt", '-t', 'halt'],
+export const LANGUAGE_RUN_COMMANDS: Record<Language, (entryPoint?: string) => string[]> = {
+    python: () => ['python3', '-u', '/code/main.py'],
+    java:  (ep = 'Main') => ['/bin/sh', '-c', `cd /code && javac *.java 2>&1 && java ${ep}`],
+    c:      () => ['/bin/sh', '-c', 'cd /code && gcc -o main main.c 2>&1 && ./main'],
+    shell:  () => ['/bin/sh', '/code/main.sh'],
+    lisp:   () => ['sbcl', '--script', '/code/main.lisp'],
+    prolog: () => ['swipl', '-q', '-g', "consult('/code/main.pl'), halt", '-t', 'halt'],
 }
 
 // Frontend -> Backend messages
 export type ClientMessage =
-    | { type: 'run'; language: Language; code:string}
+    | { type: 'run'; language: Language; files: Array<{id: string; filename: string; content: string}>; entryPoint?: string }
     | { type: 'input'; data:string}
     | { type: 'resize'; cols: number; rows: number }
     | { type: 'stop'}
