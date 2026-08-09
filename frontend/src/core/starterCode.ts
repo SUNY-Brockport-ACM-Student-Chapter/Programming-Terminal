@@ -38,7 +38,7 @@ export function getStarterFiles(language: Language): EditorFile[]{
         filename: 'main.lisp',
         content:
         `; Common Lisp
-        \n(format t "Hello, World! ~%")\n'
+        \n(format t "Hello, World! ~%")
         \n`,
       }]
     

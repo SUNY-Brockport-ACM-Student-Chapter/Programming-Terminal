@@ -60,6 +60,9 @@ export function CodeEditor({
   // Accumulates stdout/stderr for the current program being run, so it can be handed to the onExecutionResult once the process exits
   const outputBufferRef = useRef('')
 
+  // Track whether this is the first render, so we can avoid overwriting the initialFiles prop on mount
+  const isFirstRender = useRef(true)
+
   // Reset entire file state for different questions
   useEffect(() => {
     if(initialFiles && initialFiles.length > 0){
@@ -70,6 +73,10 @@ export function CodeEditor({
 
   // When a new language is selected from the toolbar, reset to starter files for new language
   useEffect(() => {
+    if(isFirstRender.current){
+      isFirstRender.current = false
+      return 
+    }
     const starter = getStarterFiles(language)
     setFiles(starter)
     setActiveId(starter[0].id)
@@ -104,11 +111,11 @@ export function CodeEditor({
   // Close a tab - if it's the active one, switch to another tab first
   const handleTabClose = useCallback((id:string) => {
     setFiles(prev => {
-      const remianing = prev.filter(f => f.id !== id)
-      if(id === activeId && remianing.length > 0){
-        setActiveId(remianing[0].id)
+      const remaining = prev.filter(f => f.id !== id)
+      if(id === activeId && remaining.length > 0){
+        setActiveId(remaining[0].id)
       }
-      return remianing
+      return remaining
     })
   }, [activeId])
 
@@ -127,6 +134,7 @@ export function CodeEditor({
 
     onReady: useCallback(() => {
       setIsRunning(true)
+      outputBufferRef.current = '' // safety reset in case of mid-session disconnect
     }, []),
 
     onOutput: useCallback((data: string) => {
