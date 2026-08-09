@@ -7,7 +7,6 @@ import { defaultKeymap, history, historyKeymap, indentWithTab }  from '@codemirr
 import { indentOnInput, syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldGutter, indentUnit } from '@codemirror/language'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { getLanguageExtension } from '../core/languages'
-import { starterCode } from '../core/starterCode'
 import type { Language } from '../types'
 
 // Defines imperative API the parent (CodeEditor) can call
@@ -19,13 +18,14 @@ export interface EditorHandle {
 
 interface EditorPaneProps {
   language: Language // currently selected language
+  initialContent: string // content of the currently active file 
   onContentChange: (code: string) => void // called whenever the editor content changes 
 }
 
 const languageCompartment = new Compartment()
 
 export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
-  ({ language, onContentChange }, ref) => {
+  ({ language, initialContent, onContentChange }, ref) => {
     // Points to div that CodeMirror will render into 
     const containerRef = useRef<HTMLDivElement>(null)
     // Holds the CodeMirror Editorview instance
@@ -42,7 +42,7 @@ export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
       // Create initial editor state will all extensions configured
       const view = new EditorView({
         state: EditorState.create({
-          doc: starterCode[language],
+          doc: initialContent,
           extensions: [
             lineNumbers(),
             highlightActiveLineGutter(),
@@ -98,11 +98,6 @@ export const EditorPane = forwardRef<EditorHandle, EditorPaneProps>(
       if (!viewRef.current) return
       viewRef.current.dispatch({
         effects: languageCompartment.reconfigure(getLanguageExtension(language) as Extension),
-        changes:{
-            from: 0,
-            to: viewRef.current.state.doc.length,
-            insert: starterCode[language]
-        },
       })
     }, [language])
 

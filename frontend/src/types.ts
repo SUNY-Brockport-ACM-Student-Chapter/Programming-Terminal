@@ -2,10 +2,17 @@ export type Language = 'python' | 'java' | 'c' | 'shell' | 'lisp' | 'prolog'
 
 export const LANGUAGES: Language[] = ['python', 'java', 'c', 'shell', 'lisp', 'prolog']
 
+// Represents a single file tab in the editor
+export interface EditorFile{
+    id: string
+    filename: string
+    content: string
+}
+
 // WebSocket protocol 
 //frontend to backend messages
 export type ClientMessage =
-| { type: 'run'; language: Language; code: string} // sent when a user clicks run
+| { type: 'run'; language: Language; files: EditorFile[]; entryPoint?: string} // sent when a user clicks run
 | { type: 'input'; data: string} // sent for every keystroke
 | { type: 'resize'; cols: number; rows: number} // sent when the terminal's pixel dimensions change
 | { type: 'stop'} // sent when a user clicks stop

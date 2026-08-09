@@ -3,7 +3,7 @@ import * as pty from 'node-pty'
 import * as tar from 'tar-stream'
 import { WebSocket } from 'ws'
 import { containerPool } from './pool'
-import { Language, LANGUAGE_FILENAMES, LANGUAGE_RUN_COMMANDS, ServerMessage} from './types'
+import { Language, LANGUAGE_RUN_COMMANDS, ServerMessage} from './types'
 
 const docker = new Dockerode
 const MAX_EXECUTION_MS = parseInt(process.env.MAX_EXECUTION_TIME ?? '15000', 10) // This timeout kills an infinite loop
@@ -22,7 +22,11 @@ export class ExecutionSession
     constructor(private ws: WebSocket) {}
 
     // Run is called when the frontend signals that a user has hit the run button
-    async run(language: Language, code: string): Promise<void>
+    async run(
+        language: Language, 
+        files: Array<{id: string; filename: string; content: string}>,
+        entryPoint?: string
+    ): Promise<void>
     {
         // Prevent starting a new session if a session is already active
         if(this.ptyProc)
@@ -49,7 +53,10 @@ export class ExecutionSession
 
         // Copy source file into the container
         try{
-            await copyFile(container, LANGUAGE_FILENAMES[language], code)
+            for(const file of files)
+            {
+                await copyFile(container, file.filename, file.content)
+            }
         }catch(err){
             this.send({type: 'error', message: `Failed to copy code: ${err}`})
             await containerPool.realease(this.poolId)
@@ -58,7 +65,7 @@ export class ExecutionSession
         }
 
         // Spawn the PTY via docker exec 
-        const [bin, ...args] = LANGUAGE_RUN_COMMANDS[language]
+        const [bin, ...args] = LANGUAGE_RUN_COMMANDS[language](entryPoint)
         // Notify the frontend that execution is about to start
         this.send({type: 'ready'})
         this.stopped = false

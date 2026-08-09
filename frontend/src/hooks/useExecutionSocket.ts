@@ -1,5 +1,5 @@
 import {useEffect, useRef, useCallback} from 'react'
-import type {ClientMessage, ServerMessage, Language} from '../types'
+import type {ClientMessage, ServerMessage, Language, EditorFile} from '../types'
 
 // Defines what callback functions the hook calls when WebSocket events occur
 interface UseExecutionSocketOptions {
@@ -12,7 +12,7 @@ interface UseExecutionSocketOptions {
 
 // Defines what the hook returns - the actions that components can call to interact with the WebSocket connection
 interface ExecutionSocketHandle{
-    run(language: Language, code: string): void
+    run(language: Language, files: EditorFile[], entryPoint?: string): void
     stop(): void
     sendInput(data: string): void
     sendResize(cols: number, rows: number): void
@@ -137,10 +137,10 @@ export function useExecutionSocket({
         }, [])
 
         // sends run request to the server
-        const run = useCallback((language: Language, code: string) => {
+        const run = useCallback((language: Language, files: EditorFile[], entryPoint?: string) => {
             // If something is running already, stop it first
             if (isRunningRef.current) send({ type: 'stop' })
-            send({ type: 'run', language, code })
+            send({ type: 'run', language, files, entryPoint })
         }, [send])
 
         // sends stop request for the currently running process

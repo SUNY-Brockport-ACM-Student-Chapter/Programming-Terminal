@@ -30,7 +30,7 @@ export function attachWebSocketServer(server: Server): void{
                         return
                     }
                     // Start the execution. This is async so we await it
-                    await session.run(msg.language, msg.code)
+                    await session.run(msg.language, msg.files, msg.entryPoint)
                     break
                 case 'input':
                     // Forward the keystrokes to the running process's stdin
