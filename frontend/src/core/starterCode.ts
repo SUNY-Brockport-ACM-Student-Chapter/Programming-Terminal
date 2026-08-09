@@ -75,22 +75,28 @@ export function getStarterFiles(language: Language): EditorFile[]{
   }
 }
 
+// Validates that a filename only contains safe characters
+function isSafeFilename(filename:string) : boolean {
+  return /^[A-Za-z0-9_\-\.]+$/.test(filename) && !filename.startsWith('.')
+}
+
 // Returns blank file template for the given language and filename. Used when a user adds a new tab
 export function newFileTemplate(language:Language, filename: string): EditorFile{
-  const className = filename.replace(/\.\w+$/,'') // strip extension
+  const safeFilename = isSafeFilename(filename) ? filename : `newfile${Date.now()}`
+  const className = safeFilename.replace(/\.\w+$/,'') // strip extension
 
   const content: Record<Language, string> = {
-    c: `// ${filename} \n#include <stdio.h>\n\n`,
+    c: `// ${safeFilename} \n#include <stdio.h>\n\n`,
     java: `public class ${className} {\n  \n}\n`,
-    lisp: `; ${filename}\n`,
-    prolog: `% ${filename}\n`,
-    python: `# ${filename}\n`,
-    shell: `#!/bin/sh\n# ${filename}\n`,
+    lisp: `; ${safeFilename}\n`,
+    prolog: `% ${safeFilename}\n`,
+    python: `# ${safeFilename}\n`,
+    shell: `#!/bin/sh\n# ${safeFilename}\n`,
   }
 
   return{
     id: crypto.randomUUID(),
-    filename,
+    filename: safeFilename,
     content: content[language],
   }
 }

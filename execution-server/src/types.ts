@@ -12,7 +12,10 @@ export const RUNNER_IMAGE = 'programming-runner:latest'
 // Map each language to the command run via docker exec.
 export const LANGUAGE_RUN_COMMANDS: Record<Language, (entryPoint?: string) => string[]> = {
     python: () => ['python3', '-u', '/code/main.py'],
-    java:  (ep = 'Main') => ['/bin/sh', '-c', `cd /code && javac *.java 2>&1 && java ${ep}`],
+    java:  (ep = 'Main') => {
+        const safeEntryPoint = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(ep ?? '') ? ep : 'Main'
+        return ['/bin/sh', '-c', `cd /code && javac *.java 2>&1 && java ${safeEntryPoint}`]
+    },
     c:      () => ['/bin/sh', '-c', 'cd /code && gcc -o main main.c 2>&1 && ./main'],
     shell:  () => ['/bin/sh', '/code/main.sh'],
     lisp:   () => ['sbcl', '--script', '/code/main.lisp'],

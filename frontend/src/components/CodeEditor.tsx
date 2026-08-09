@@ -63,25 +63,12 @@ export function CodeEditor({
   // Accumulates stdout/stderr for the current program being run, so it can be handed to the onExecutionResult once the process exits
   const outputBufferRef = useRef('')
 
-  // Track whether this is the first render, so we can avoid overwriting the initialFiles prop on mount
-  const isFirstRender = useRef(true)
-
   // Reset entire file state for different questions
   useEffect(() => {
     if(initialFiles && initialFiles.length > 0){
       setEditorState({ files: initialFiles, activeId: initialFiles[0].id})
     }
   }, [initialFiles])
-
-  // When a new language is selected from the toolbar, reset to starter files for new language
-  useEffect(() => {
-    if(isFirstRender.current){
-      isFirstRender.current = false
-      return 
-    }
-    const starter = getStarterFiles(language)
-    setEditorState({ files: starter, activeId: starter[0].id })
-  }, [language])
 
   // Load active file content into the editor whenever the active tab changes
   const activeFile = files.find(f => f.id === activeId)
@@ -128,6 +115,16 @@ export function CodeEditor({
       activeId: newFile.id
     }))
   }, [language])
+
+  const handleRename = useCallback((id: string, newFilename: string) => {
+    setEditorState(prev => ({
+      ...prev,
+      files: prev.files.map(f => f.id === id ? { ...f, filename: newFilename } : f)
+    }))
+    onFilesChange?.(
+      files.map(f => f.id === id ? { ...f, filename: newFilename } : f)
+    )
+  }, [files, onFilesChange])
 
   
 
@@ -201,6 +198,7 @@ export function CodeEditor({
         onSelect={handleTabSelect}
         onClose={handleTabClose}
         onAdd={handleTabAdd}
+        onRename={handleRename}
       />
 
       <Group orientation={layout} className="flex-1 min-h-0" >
