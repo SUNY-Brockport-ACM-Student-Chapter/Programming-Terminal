@@ -46,11 +46,14 @@ export function CodeEditor({
   // layout controls the panel orientation 
   const [layout, setLayout] = useState<'vertical' | 'horizontal'>('vertical')
 
-  // File state - each file is a tab
-  const [files, setFiles] = useState<EditorFile[]>(initialFiles ?? getStarterFiles(language))
+  // files is the array of all open files, activeId is the id of the currently active file
+  const [editorState, setEditorState] = useState(() => {
+    const fileState = initialFiles ?? getStarterFiles(language)
+    return { files: fileState, activeId: fileState[0].id}
+  })
 
-  // Which tab is currently visible
-  const [activeId, setActiveId] = useState<string>((initialFiles ?? getStarterFiles(language))[0].id)
+  // Helper functions to update files and activeId in a single state object
+  const { files, activeId } = editorState
 
   // gives access to EditorPane's imperative API
   const editorRef   = useRef<EditorHandle>(null)
@@ -66,8 +69,7 @@ export function CodeEditor({
   // Reset entire file state for different questions
   useEffect(() => {
     if(initialFiles && initialFiles.length > 0){
-      setFiles(initialFiles)
-      setActiveId(initialFiles[0].id)
+      setEditorState({ files: initialFiles, activeId: initialFiles[0].id})
     }
   }, [initialFiles])
 
@@ -78,8 +80,7 @@ export function CodeEditor({
       return 
     }
     const starter = getStarterFiles(language)
-    setFiles(starter)
-    setActiveId(starter[0].id)
+    setEditorState({ files: starter, activeId: starter[0].id })
   }, [language])
 
   // Load active file content into the editor whenever the active tab changes
@@ -92,38 +93,40 @@ export function CodeEditor({
 
   // Save content of active file when editor reports a change
   const handleContentChange = useCallback((code: string) => {
-    setFiles(prev => {
-      const updated = prev.map(f => f.id === activeId ? {...f, content: code} : f)
+    setEditorState(prev => {
+      const updated = prev.files.map(f => f.id === prev.activeId ? {...f, content: code} : f)
       onFilesChange?.(updated)
-      return updated
+      return { ...prev, files: updated}
     })
-  }, [activeId, onFilesChange])
+  }, [onFilesChange])
 
   // Switch tabs - save current content to active file first
   const handleTabSelect = useCallback((id: string) => {
     const currentContent = editorRef.current?.getValue() ?? ''
-    setFiles(prev =>
-      prev.map(f => f.id === activeId ? {...f, content: currentContent} : f)
-    )
-    setActiveId(id)
-  }, [activeId])
+    setEditorState(prev => ({
+      files: prev.files.map(f =>
+        f.id === prev.activeId ? { ...f, content: currentContent } : f
+      ),
+      activeId: id,
+    }))
+  }, [])
 
   // Close a tab - if it's the active one, switch to another tab first
   const handleTabClose = useCallback((id:string) => {
-    setFiles(prev => {
-      const remaining = prev.filter(f => f.id !== id)
-      if(id === activeId && remaining.length > 0){
-        setActiveId(remaining[0].id)
-      }
-      return remaining
+    setEditorState(prev => {
+      const remaining = prev.files.filter(f => f.id !== id)
+      const newActiveId = id === prev.activeId && remaining.length > 0 ? remaining[0].id : prev.activeId
+      return { files: remaining, activeId: newActiveId}
     })
-  }, [activeId])
+  }, [])
 
   // Add a new file tab
   const handleTabAdd = useCallback((filename: string) => {
     const newFile = newFileTemplate(language, filename)
-    setFiles(prev => [...prev, newFile])
-    setActiveId(newFile.id)
+    setEditorState(prev => ({
+      files: [...prev.files, newFile],
+      activeId: newFile.id
+    }))
   }, [language])
 
   
