@@ -9,17 +9,35 @@ An image contains all language runtimes, so any container can run any language
 */
 export const RUNNER_IMAGE = 'programming-runner:latest'
 
+function safePath(filename: string, fallback: string): string {
+    return /^[A-Za-z0-9_\-\.]+$/.test(filename) ? filename : fallback
+}
+
 // Map each language to the command run via docker exec.
 export const LANGUAGE_RUN_COMMANDS: Record<Language, (entryPoint?: string) => string[]> = {
-    python: (ep = 'main.py') => ['python3', '-u', `/code/${ep}`],
+    python: (ep = 'main.py') => {
+        const safe = safePath(ep, 'main.py')
+        return ['python3', '-u', `/code/${safe}`]},
     java:  (ep = 'Main') => {
         const safeEntryPoint = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(ep ?? '') ? ep : 'Main'
         return ['/bin/sh', '-c', `cd /code && javac *.java 2>&1 && java ${safeEntryPoint}`]
     },
-    c:      (ep = 'main.c') => ['/bin/sh', '-c', `cd /code && gcc -o main ${ep} 2>&1 && ./main`],
-    shell:  (ep = 'main.sh') => ['/bin/sh', `/code/${ep}`],
-    lisp:   (ep = 'main.lisp') => ['sbcl', '--script', `/code/${ep}`],
-    prolog: (ep = 'main.pl') => ['swipl', '-q', '-g', `consult('/code/${ep}'), halt`, '-t', 'halt'],
+    c: (ep = 'main.c') => {
+        const safe = safePath(ep, 'main.c')
+        return ['/bin/sh', '-c', `cd /code && gcc -o main ${safe} 2>&1 && ./main`]
+    },
+    shell:  (ep = 'main.sh') => {
+        const safe = safePath(ep, 'main.sh')
+        return ['/bin/sh', `/code/${safe}`]
+    },
+    lisp:   (ep = 'main.lisp') => {
+        const safe = safePath(ep, 'main.lisp')
+        return ['sbcl', '--script', `/code/${safe}`]
+    },
+    prolog: (ep = 'main.pl') => {
+        const safe = safePath(ep, 'main.pl')
+        return ['swipl', '-q', '-g', `consult('/code/${safe}'), halt`, '-t', 'halt']
+    }
 }
 
 // Frontend -> Backend messages
