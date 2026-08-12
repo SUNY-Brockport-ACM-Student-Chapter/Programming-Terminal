@@ -11,15 +11,15 @@ export const RUNNER_IMAGE = 'programming-runner:latest'
 
 // Map each language to the command run via docker exec.
 export const LANGUAGE_RUN_COMMANDS: Record<Language, (entryPoint?: string) => string[]> = {
-    python: () => ['python3', '-u', '/code/main.py'],
+    python: (ep = 'main.py') => ['python3', '-u', `/code/${ep}`],
     java:  (ep = 'Main') => {
         const safeEntryPoint = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(ep ?? '') ? ep : 'Main'
         return ['/bin/sh', '-c', `cd /code && javac *.java 2>&1 && java ${safeEntryPoint}`]
     },
-    c:      () => ['/bin/sh', '-c', 'cd /code && gcc -o main main.c 2>&1 && ./main'],
-    shell:  () => ['/bin/sh', '/code/main.sh'],
-    lisp:   () => ['sbcl', '--script', '/code/main.lisp'],
-    prolog: () => ['swipl', '-q', '-g', "consult('/code/main.pl'), halt", '-t', 'halt'],
+    c:      (ep = 'main.c') => ['/bin/sh', '-c', `cd /code && gcc -o main ${ep} 2>&1 && ./main`],
+    shell:  (ep = 'main.sh') => ['/bin/sh', `/code/${ep}`],
+    lisp:   (ep = 'main.lisp') => ['sbcl', '--script', `/code/${ep}`],
+    prolog: (ep = 'main.pl') => ['swipl', '-q', '-g', `consult('/code/${ep}'), halt`, '-t', 'halt'],
 }
 
 // Frontend -> Backend messages

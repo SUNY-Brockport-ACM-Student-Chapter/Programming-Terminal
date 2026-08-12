@@ -20,15 +20,35 @@ interface CodeEditorProps {
   onExecutionResult?: (result: {output: string; exitCode: number | null; error?: string}) => void
 }
 
-function detectJavaEntryPoint(files: EditorFile[]): string {
-  for(const file of files)
-  {
-    if(file.content.includes('public static void main')){
-      return file.filename.replace('.java', '')
-    }
-  }
-  // Fallback to Main if there's no main method found
-  return 'Main' 
+function detectEntryPoint(language: Language, files: EditorFile[]): string {
+  switch(language){
+    case 'java':
+      for(const file of files)
+      {
+        if(file.content.includes('public static void main'))
+        {
+          return file.filename.replace('.java', '')
+        }
+      }
+      // Fallback to Main if there's no main method found
+      return 'Main'
+    
+    case 'python':
+      // The first .py file is the entry point or fallback to main
+      return files.find(f => f.filename.endsWith('.py'))?.filename ?? 'main.py'
+
+    case 'shell':
+       return files.find(f => f.filename.endsWith('.sh'))?.filename ?? 'main.sh'
+
+    case 'lisp':
+      return files.find(f => f.filename.endsWith('.lisp'))?.filename ?? 'main.lisp'
+
+    case 'prolog':
+      return files.find(f => f.filename.endsWith('.pl'))?.filename ?? 'main.pl'
+
+    case 'c':
+      return 'main'
+  } 
 }
 
 // CodeEditor is the main component that owns all state and wires everything together
@@ -103,6 +123,7 @@ export function CodeEditor({
     setEditorState(prev => {
       const remaining = prev.files.filter(f => f.id !== id)
       const newActiveId = id === prev.activeId && remaining.length > 0 ? remaining[0].id : prev.activeId
+      onFilesChange?.(remaining)
       return { files: remaining, activeId: newActiveId}
     })
   }, [])
@@ -110,11 +131,12 @@ export function CodeEditor({
   // Add a new file tab
   const handleTabAdd = useCallback((filename: string) => {
     const newFile = newFileTemplate(language, filename)
-    setEditorState(prev => ({
-      files: [...prev.files, newFile],
-      activeId: newFile.id
-    }))
-  }, [language])
+    setEditorState(prev => {
+      const updatedFiles = [...prev.files, newFile]
+      onFilesChange?.(updatedFiles)
+      return { files: updatedFiles, activeId: newFile.id }
+    })
+  }, [language, onFilesChange])
 
   const handleRename = useCallback((id: string, newFilename: string) => {
     setEditorState(prev => ({
@@ -166,7 +188,7 @@ export function CodeEditor({
   outputBufferRef.current = ''
   terminalRef.current?.clear()
 
-  const ep = entryPoint ?? (language === 'java' ? detectJavaEntryPoint(allFiles) : undefined)
+  const ep = entryPoint ?? detectEntryPoint(language, allFiles)
 
   run(language, allFiles, ep)
  }, [files, activeId, language, entryPoint, run])
