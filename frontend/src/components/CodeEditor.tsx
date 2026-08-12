@@ -129,7 +129,7 @@ export function CodeEditor({
       return { files: remaining, activeId: newActiveId}
     })
     onFilesChange?.(updatedFiles)
-  }, [])
+  }, [onFilesChange])
 
   // Add a new file tab
   const handleTabAdd = useCallback((filename: string) => {
@@ -137,7 +137,7 @@ export function CodeEditor({
     let updatedFiles: EditorFile[] = []
 
     setEditorState(prev => {
-      const updatedFiles = [...prev.files, newFile]
+      updatedFiles = [...prev.files, newFile]
       return { files: updatedFiles, activeId: newFile.id }
     })
     onFilesChange?.(updatedFiles)
