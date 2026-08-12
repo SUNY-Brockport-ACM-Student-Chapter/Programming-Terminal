@@ -47,7 +47,7 @@ function detectEntryPoint(language: Language, files: EditorFile[]): string {
       return files.find(f => f.filename.endsWith('.pl'))?.filename ?? 'main.pl'
 
     case 'c':
-      return 'main'
+      return files.find(f => f.filename.endsWith('.c'))?.filename ?? 'main.c'
   } 
 }
 
@@ -120,22 +120,27 @@ export function CodeEditor({
 
   // Close a tab - if it's the active one, switch to another tab first
   const handleTabClose = useCallback((id:string) => {
+    let updatedFiles: EditorFile[] = []
+
     setEditorState(prev => {
       const remaining = prev.files.filter(f => f.id !== id)
       const newActiveId = id === prev.activeId && remaining.length > 0 ? remaining[0].id : prev.activeId
-      onFilesChange?.(remaining)
+      updatedFiles = remaining
       return { files: remaining, activeId: newActiveId}
     })
-  }, [])
+    onFilesChange?.(updatedFiles)
+  }, [onFilesChange])
 
   // Add a new file tab
   const handleTabAdd = useCallback((filename: string) => {
     const newFile = newFileTemplate(language, filename)
+    let updatedFiles: EditorFile[] = []
+
     setEditorState(prev => {
-      const updatedFiles = [...prev.files, newFile]
-      onFilesChange?.(updatedFiles)
+      updatedFiles = [...prev.files, newFile]
       return { files: updatedFiles, activeId: newFile.id }
     })
+    onFilesChange?.(updatedFiles)
   }, [language, onFilesChange])
 
   const handleRename = useCallback((id: string, newFilename: string) => {
