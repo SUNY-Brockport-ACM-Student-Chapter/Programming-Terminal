@@ -5,6 +5,7 @@ export interface EditorHandle {
 }
 interface EditorPaneProps {
     language: Language;
+    initialContent: string;
     onContentChange: (code: string) => void;
 }
 export declare const EditorPane: import('react').ForwardRefExoticComponent<EditorPaneProps & import('react').RefAttributes<EditorHandle>>;

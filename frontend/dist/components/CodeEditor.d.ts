@@ -1,16 +1,17 @@
-import { Language } from '../types';
+import { Language, EditorFile } from '../types';
 interface CodeEditorProps {
     language: Language;
     wsUrl: string;
-    initialCode?: string;
+    initialFiles?: EditorFile[];
+    entryPoint?: string;
     allowedLanguages?: Language[];
     onLanguageChange?: (lang: Language) => void;
-    onCodeChange?: (code: string) => void;
+    onFilesChange?: (files: EditorFile[]) => void;
     onExecutionResult?: (result: {
         output: string;
         exitCode: number | null;
         error?: string;
     }) => void;
 }
-export declare function CodeEditor({ language, wsUrl, initialCode, allowedLanguages, onLanguageChange, onCodeChange, onExecutionResult }: CodeEditorProps): import("react").JSX.Element;
+export declare function CodeEditor({ language, wsUrl, initialFiles, entryPoint, allowedLanguages, onLanguageChange, onFilesChange, onExecutionResult }: CodeEditorProps): import("react").JSX.Element;
 export {};

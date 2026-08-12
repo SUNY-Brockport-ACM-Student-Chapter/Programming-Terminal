@@ -1,4 +1,11 @@
 export { CodeEditor } from './components/CodeEditor';
+export { EditorPane } from './components/EditorPane';
+export { TerminalPane } from './components/TerminalPane';
+export { Toolbar } from './components/Toolbar';
+export { TabBar } from './components/TabBar';
+export { useExecutionSocket } from './hooks/useExecutionSocket';
+export { getStarterFiles } from './core/starterCode';
 export type { Language } from './types';
+export type { EditorFile } from './types';
 export type { EditorHandle } from './components/EditorPane';
 export type { TerminalHandle } from './components/TerminalPane';

@@ -1,4 +1,4 @@
-import { Language } from '../types';
+import { Language, EditorFile } from '../types';
 interface UseExecutionSocketOptions {
     wsUrl: string;
     onReady: () => void;
@@ -7,7 +7,7 @@ interface UseExecutionSocketOptions {
     onError: (message: string) => void;
 }
 interface ExecutionSocketHandle {
-    run(language: Language, code: string): void;
+    run(language: Language, files: EditorFile[], entryPoint?: string): void;
     stop(): void;
     sendInput(data: string): void;
     sendResize(cols: number, rows: number): void;

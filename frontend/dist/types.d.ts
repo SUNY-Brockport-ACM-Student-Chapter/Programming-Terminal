@@ -1,9 +1,15 @@
 export type Language = 'python' | 'java' | 'c' | 'shell' | 'lisp' | 'prolog';
 export declare const LANGUAGES: Language[];
+export interface EditorFile {
+    id: string;
+    filename: string;
+    content: string;
+}
 export type ClientMessage = {
     type: 'run';
     language: Language;
-    code: string;
+    files: EditorFile[];
+    entryPoint?: string;
 } | {
     type: 'input';
     data: string;
