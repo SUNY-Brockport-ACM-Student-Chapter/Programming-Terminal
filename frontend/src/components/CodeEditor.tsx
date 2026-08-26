@@ -172,14 +172,14 @@ export function CodeEditor({
     onExit: useCallback((code: number | null) => {
       setIsRunning(false)
       terminalRef.current?.write(
-        `\r\n\x1b[37m[Process exited with code ${code ?? 0}]\x1b[0m\r\n`
+        `\r\n\n\x1b[37m[Process exited with code ${code ?? 0}]\x1b[0m\r\n`
       )
       onExecutionResult?.({output: outputBufferRef.current, exitCode: code ?? null})
     }, [onExecutionResult]),
 
     onError: useCallback((message: string) => {
       setIsRunning(false)
-      terminalRef.current?.write(`\r\n\x1b[31m[Error: ${message}]\x1b[0m\r\n`)
+      terminalRef.current?.write(`\r\n\n\x1b[31m[Error: ${message}]\x1b[0m\r\n`)
       onExecutionResult?.({output: outputBufferRef.current, exitCode: null, error: message})
     }, [onExecutionResult]),
   })
