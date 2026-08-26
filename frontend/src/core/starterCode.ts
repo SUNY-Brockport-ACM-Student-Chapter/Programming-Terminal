@@ -10,7 +10,7 @@ export function getStarterFiles(language: Language): EditorFile[]{
         content:
         `// C
         \n#include <stdio.h>
-        \n\nint main() {
+        \nint main(){
         \n  printf("Hello, World!\\n");
         \n  return 0;
         \n}
@@ -23,11 +23,10 @@ export function getStarterFiles(language: Language): EditorFile[]{
         filename: 'Main.java',
         content:
         `// Java
-        \npublic class Main{
+        \npublic class Main {
         \n  public static void main(String[] args){
-              \nSystem.out.println("Hello, World!\\n");
-              \n
-            \n}
+              \n    System.out.println("Hello, World!\\n");
+            \n  }
         \n}
         \n`,
       }]
