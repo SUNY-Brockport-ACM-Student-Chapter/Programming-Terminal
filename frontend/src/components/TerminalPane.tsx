@@ -95,7 +95,7 @@ export const TerminalPane = forwardRef<TerminalHandle, TerminalPaneProps>(
         <div className="text-[11px] text-[#888] px-2 py-0.5 bg-[#1a1a1a] border-t border-[#333] uppercase tracking-wide flex-shrink-0">
           Output
         </div>
-        <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden" />
+        <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden p-3" />
       </div>
     )
   }
