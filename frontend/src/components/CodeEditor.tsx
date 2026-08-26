@@ -83,12 +83,51 @@ export function CodeEditor({
   // Accumulates stdout/stderr for the current program being run, so it can be handed to the onExecutionResult once the process exits
   const outputBufferRef = useRef('')
 
+  // Caches each language's files/activeId when we switch away from it, so switching
+  // back restores exactly what was there before instead of losing it or re-generating it
+  const filesByLanguageRef = useRef<Partial<Record<Language, typeof editorState>>>({
+    [language]: editorState,
+  })
+  // Tracks the language from the previous render so we can detect toolbar switches
+  const prevLanguageRef = useRef(language)
+  // Always holds the latest language prop, readable from effects that shouldn't re-run on language changes
+  const languageRef = useRef(language)
+  languageRef.current = language
+
   // Reset entire file state for different questions
   useEffect(() => {
     if(initialFiles && initialFiles.length > 0){
-      setEditorState({ files: initialFiles, activeId: initialFiles[0].id})
+      const newState = { files: initialFiles, activeId: initialFiles[0].id}
+      setEditorState(newState)
+      filesByLanguageRef.current = { [languageRef.current]: newState }
     }
   }, [initialFiles])
+
+  // When the language changes via the toolbar: stash the outgoing language's files
+  // (including any in-progress edits) in the cache, then restore that language's files
+  // from the cache if we've visited it before, or generate starter files if not.
+  useEffect(() => {
+    const prevLanguage = prevLanguageRef.current
+    prevLanguageRef.current = language
+    if (prevLanguage === language) return
+
+    const currentContent = editorRef.current?.getValue() ?? ''
+
+    setEditorState(prev => {
+      const savedFiles = prev.files.map(f =>
+        f.id === prev.activeId ? { ...f, content: currentContent } : f
+      )
+      filesByLanguageRef.current[prevLanguage] = { files: savedFiles, activeId: prev.activeId }
+
+      const cached = filesByLanguageRef.current[language]
+      const nextState = cached ?? (() => {
+        const starterFiles = getStarterFiles(language)
+        return { files: starterFiles, activeId: starterFiles[0].id }
+      })()
+      filesByLanguageRef.current[language] = nextState
+      return nextState
+    })
+  }, [language])
 
   // Load active file content into the editor whenever the active tab changes
   const activeFile = files.find(f => f.id === activeId)
