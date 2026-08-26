@@ -1,6 +1,6 @@
 {
     "name": "@suny-brockport-acm-student-chapter/programming-terminal",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "main": "./frontend/dist/programming-terminal.cjs",
     "module": "./frontend/dist/programming-terminal.js",
     "types": "./frontend/dist/index.d.ts",
