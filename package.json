@@ -1,6 +1,15 @@
 {
-    "name": "@suny-brockport-acm-student-chapter/programming-terminal",
+    "name": "@edually/programming-terminal",
     "version": "1.2.0",
+    "description": "An embeddable React code editor and interactive terminal for programming exercises.",
+    "keywords": [
+        "code-editor",
+        "codemirror",
+        "education",
+        "react",
+        "terminal",
+        "xterm"
+    ],
     "main": "./frontend/dist/programming-terminal.cjs",
     "module": "./frontend/dist/programming-terminal.js",
     "types": "./frontend/dist/index.d.ts",
@@ -8,15 +17,24 @@
         "type": "git",
         "url": "git+https://github.com/SUNY-Brockport-ACM-Student-Chapter/Programming-Terminal.git"
     },
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
+    "homepage": "https://github.com/SUNY-Brockport-ACM-Student-Chapter/Programming-Terminal#readme",
+    "bugs": {
+        "url": "https://github.com/SUNY-Brockport-ACM-Student-Chapter/Programming-Terminal/issues"
     },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    },
+    "files": [
+        "frontend/dist"
+    ],
     "exports": {
         ".": {
             "types": "./frontend/dist/index.d.ts",
             "import": "./frontend/dist/programming-terminal.js",
             "require": "./frontend/dist/programming-terminal.cjs"
-        }
+        },
+        "./styles.css": "./frontend/dist/programming-terminal.css"
     },
     "scripts": {
         "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix execution-server\"",
@@ -28,5 +46,8 @@
     },
     "dependencies": {
         "react-resizable-panels": "^4.11.2"
+    },
+    "peerDependencies": {
+        "react": "^18.0.0 || ^19.0.0"
     }
 }
