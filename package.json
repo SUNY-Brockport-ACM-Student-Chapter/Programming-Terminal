@@ -1,6 +1,6 @@
 {
     "name": "@edually/programming-terminal",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "An embeddable React code editor and interactive terminal for programming exercises.",
     "keywords": [
         "code-editor",
